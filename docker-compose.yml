@@ -2,10 +2,10 @@ services:
   db:
     image: mysql:8.0
     environment:
-      MYSQL_ROOT_PASSWORD: ***REMOVED_DB_PASSWORD***
-      MYSQL_DATABASE: dnd_pnj
-    ports:
-      - "3307:3306"
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
     volumes:
       - mysql_data:/var/lib/mysql
     healthcheck:
@@ -17,19 +17,19 @@ services:
   backend:
     build: ./bankend
     ports:
-      - "5000:5000"
+      - "127.0.0.1:5000:5000"
     environment:
       DB_HOST: db
       DB_PORT: 3306
-      DB_NAME: dnd_pnj
-      DB_USER: root
-      DB_PASSWORD: ***REMOVED_DB_PASSWORD***
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
       PORT: 5000
-      JWT_SECRET: ***REMOVED_JWT_SECRET***
+      JWT_SECRET: ${JWT_SECRET}
       DEEPL_API_KEY: ${DEEPL_API_KEY}
-      EMAIL_USER: dndpnj.noreply@gmail.com
-      EMAIL_PASS: ***REMOVED_EMAIL_PASS***
-      FRONTEND_URL: ${FRONTEND_URL:-http://192.168.1.10:3000}
+      EMAIL_USER: ${EMAIL_USER}
+      EMAIL_PASS: ${EMAIL_PASS}
+      FRONTEND_URL: ${FRONTEND_URL}
     volumes:
       - ./bankend/public/avatars:/app/public/avatars
     depends_on:
