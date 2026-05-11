@@ -1,0 +1,22 @@
+# Entornos
+.env
+.env.*
+!.env.example
+
+# Dependencias
+node_modules/
+
+# Build
+dist/
+build/
+.vite/
+
+# Logs y temporales
+*.log
+.DS_Store
+
+# Avatares subidos por usuarios (contenido en tiempo de ejecución)
+bankend/public/avatars/
+
+# Imagen original del libro (la copia en public/ es la que usa el build)
+frontend/libro.png

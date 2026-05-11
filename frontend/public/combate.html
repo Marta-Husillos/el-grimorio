@@ -1,0 +1,2949 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <title>Gestor de Combate · D&D 5e</title>
+  <link rel="stylesheet" href="/fonts/fonts.css">
+  <style>
+    :root {
+      --bg:#1a1a2e;--bg2:#16213e;--bg3:#0f3460;--bg4:#0f3460;--brd:#2e3a6e;
+      --en:#7A1C1C;--al:#5ba4f5;--ju:#4ade80;
+      --tx:#e8e8f0;--txd:#7a8a9a;
+      --hpg:#4caf50;--hpy:#ff9800;--hpr:#f44336;--gold:#C9A84C;
+    }
+    *{margin:0;padding:0;box-sizing:border-box;}
+    body{display:flex;height:100vh;font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--tx);overflow:hidden;}
+
+    /* SIDEBAR */
+    #sb{width:215px;min-width:215px;background:var(--bg2);border-right:1px solid var(--brd);display:flex;flex-direction:column;}
+    #sbh{padding:10px 12px;background:var(--bg4);border-bottom:2px solid rgba(255,255,255,.1);}
+    #sbh h2{font-size:11px;text-transform:uppercase;letter-spacing:2px;color:var(--gold);font-family:'Cinzel',Georgia,serif;}
+    #sbh p{font-size:10px;color:var(--txd);margin-top:1px;}
+    #sbl{flex:1;overflow-y:auto;padding:3px 0;}
+    .si{display:flex;align-items:center;padding:5px 10px 5px 8px;cursor:pointer;font-size:12px;border-left:3px solid transparent;gap:5px;transition:all .12s;}
+    .si.f-en{border-left-color:rgba(233,69,96,.45);background:rgba(233,69,96,.04);}
+    .si.f-al{border-left-color:rgba(91,164,245,.45);background:rgba(91,164,245,.04);}
+    .si.f-ju{border-left-color:rgba(74,222,128,.45);background:rgba(74,222,128,.04);}
+    .si:hover{filter:brightness(1.3);}
+    .si.sel{filter:brightness(1.5);}
+    .si.acting{filter:brightness(1.6);box-shadow:inset 0 0 0 1px rgba(255,255,255,.08);}
+    .si.turned{opacity:.32;}
+    .si.dead-si{opacity:.18;}
+    .si-i{font-size:11px;font-weight:700;padding:1px 4px;border-radius:3px;min-width:22px;text-align:center;flex-shrink:0;color:rgba(255,255,255,.6);background:rgba(255,255,255,.06);}
+    .si-d{width:5px;height:5px;border-radius:50%;flex-shrink:0;}
+    .si-n{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .si-ck{font-size:10px;color:var(--txd);}
+    .ssep{font-size:9px;text-transform:uppercase;letter-spacing:1.5px;color:var(--txd);padding:5px 12px 2px;opacity:.4;}
+    #sbf{padding:9px;border-top:1px solid var(--brd);}
+
+    /* MAIN */
+    #main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0;}
+    #topbar{padding:7px 12px;background:var(--bg2);border-bottom:1px solid var(--brd);display:flex;align-items:center;gap:7px;}
+    #topbar h1{font-size:14px;font-weight:700;flex:1;font-family:'Cinzel',Georgia,serif;letter-spacing:.08em;color:var(--gold);}
+    #back-btn{font-size:11px;color:var(--txd);text-decoration:none;padding:3px 8px;border:1px solid var(--brd);border-radius:4px;transition:all .15s;white-space:nowrap;}
+    #back-btn:hover{color:var(--gold);border-color:var(--gold);}
+    .tabbar{display:flex;background:var(--bg2);border-bottom:1px solid var(--brd);}
+    .tab{padding:7px 15px;cursor:pointer;font-size:12px;border-bottom:2px solid transparent;color:var(--txd);transition:all .12s;user-select:none;}
+    .tab:hover{color:var(--tx);}
+    .tab.active{color:var(--tx);border-bottom-color:rgba(255,255,255,.3);}
+    .tc{display:none;flex:1;overflow:hidden;}
+    .tc.active{display:flex;}
+
+    /* COMBAT — two columns */
+    #tab-combat{flex-direction:row;}
+    #cleft{flex:1;min-width:0;min-height:0;display:flex;flex-direction:column;overflow:hidden;}
+    #cleft-body{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;display:flex;flex-direction:column;gap:10px;padding:10px 12px;}
+    #chdr{flex-shrink:0;}
+    #cright{width:270px;min-width:220px;border-left:1px solid var(--brd);display:flex;flex-direction:column;overflow:hidden;}
+    #cright-hdr{padding:9px 11px;background:var(--bg2);border-bottom:1px solid var(--brd);font-size:9px;text-transform:uppercase;letter-spacing:2px;color:var(--txd);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+    #logpanel{flex:1;overflow-y:auto;padding:8px 9px;display:flex;flex-direction:column;gap:5px;}
+
+    /* combat header */
+    #chdr{padding:7px 12px;background:var(--bg2);border-bottom:1px solid var(--brd);display:flex;align-items:center;gap:8px;flex-shrink:0;}
+    .rbadge{font-size:11px;background:var(--bg4);padding:3px 10px;border-radius:20px;color:var(--txd);white-space:nowrap;}
+    #tlabel{font-size:12px;color:var(--txd);flex:1;}
+    .stc{display:flex;align-items:center;gap:4px;}
+    .stc label{font-size:10px;color:var(--txd);}
+    .stcin{width:46px;padding:3px 6px;background:var(--bg3);border:1px solid var(--brd);border-radius:4px;color:var(--tx);font-size:12px;font-weight:700;text-align:center;outline:none;}
+
+    /* CURRENT PANEL */
+    .shdr{font-size:9px;text-transform:uppercase;letter-spacing:2px;color:var(--txd);margin-bottom:5px;}
+    .curcard{border-radius:8px;overflow:hidden;}
+    .curcard.f-en{background:rgba(233,69,96,.07);border:1px solid rgba(233,69,96,.35);}
+    .curcard.f-al{background:rgba(91,164,245,.06);border:1px solid rgba(91,164,245,.32);}
+    .curcard.f-ju{background:rgba(74,222,128,.06);border:1px solid rgba(74,222,128,.32);}
+    .curtop{display:flex;align-items:flex-start;gap:9px;padding:11px 12px;border-bottom:1px solid var(--brd);}
+    .curinfo{flex:1;}
+    .curname{font-size:15px;font-weight:700;display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+    .fpill{font-size:9px;padding:2px 6px;border-radius:8px;font-weight:600;}
+    .fpill.f-en{background:rgba(233,69,96,.2);color:var(--en);}
+    .fpill.f-al{background:rgba(91,164,245,.18);color:var(--al);}
+    .fpill.f-ju{background:rgba(74,222,128,.15);color:var(--ju);}
+    .curmeta{font-size:11px;color:var(--txd);margin-top:3px;display:flex;gap:10px;flex-wrap:wrap;}
+    .curhp{display:flex;flex-direction:column;gap:3px;align-items:flex-end;}
+    .curhpt{font-size:11px;color:var(--txd);}
+    .hpbar{height:4px;background:rgba(0,0,0,.3);border-radius:2px;overflow:hidden;width:100px;}
+    .hpfill{height:100%;border-radius:2px;transition:width .3s,background .3s;}
+    .curacts{padding:9px 12px;display:flex;flex-direction:column;gap:5px;}
+    .noacts{padding:9px 12px;font-size:11px;color:var(--txd);font-style:italic;}
+    .pw{padding:14px 12px;text-align:center;display:flex;flex-direction:column;gap:5px;align-items:center;}
+    .pw-icon{font-size:22px;}.pw-txt{font-size:13px;color:var(--txd);}.pw-hint{font-size:11px;color:var(--txd);}
+    .pw-hint strong{color:var(--ju);}
+
+    /* ACTION CARDS combat */
+    .acard{display:flex;align-items:center;gap:8px;padding:8px 11px;background:rgba(0,0,0,.3);border:1px solid var(--brd);border-radius:5px;cursor:pointer;transition:all .14s;user-select:none;}
+    .acard:hover{border-color:rgba(255,255,255,.2);filter:brightness(1.2);transform:translateX(2px);}
+    .acard-locked{opacity:.5;cursor:not-allowed;filter:grayscale(.6);}
+    .acard-locked:hover{border-color:var(--brd);filter:grayscale(.6) brightness(1.05);transform:none;}
+    .acinfo{flex:1;}
+    .acname{font-size:12px;font-weight:600;}
+    .acdice{font-size:10px;color:var(--txd);margin-top:2px;display:flex;gap:4px;flex-wrap:wrap;align-items:center;}
+    .dc{border-radius:3px;padding:1px 5px;font-size:10px;border:1px solid;}
+    .dc.atk{color:rgba(255,255,255,.7);border-color:rgba(255,255,255,.15);background:rgba(255,255,255,.05);}
+    .dc.sv{color:var(--al);border-color:rgba(91,164,245,.25);background:rgba(91,164,245,.08);}
+    .dc.dmg{color:var(--gold);border-color:rgba(232,160,64,.25);background:rgba(232,160,64,.07);}
+    .dc.res{color:var(--ju);border-color:rgba(74,222,128,.25);background:rgba(74,222,128,.07);font-size:9px;}
+    .dsep{color:var(--txd);font-size:10px;}
+    .acbadge{font-size:9px;text-transform:uppercase;letter-spacing:.7px;padding:2px 6px;border-radius:8px;flex-shrink:0;}
+    .acbadge.atk{background:rgba(255,255,255,.07);color:rgba(255,255,255,.5);}
+    .acbadge.sav{background:rgba(91,164,245,.1);color:var(--al);}
+    .achint{font-size:10px;color:var(--txd);flex-shrink:0;}
+    .size-banner{padding:4px 9px;border-radius:4px;font-size:11px;font-weight:600;border:1px solid;line-height:1.4;}
+    .sb-vent{background:rgba(74,222,128,.15);border-color:rgba(74,222,128,.4);color:#4ade80;}
+    .sb-des{background:rgba(233,69,96,.15);border-color:rgba(233,69,96,.4);color:#e94560;}
+    .size-banner-wrap{margin-bottom:4px;}
+    .acard-multi{border-color:rgba(201,168,76,.35);cursor:pointer;}
+    .acard-multi:hover{border-color:rgba(201,168,76,.6);background:rgba(201,168,76,.06);}
+    .acard-multi-open{border-color:rgba(201,168,76,.5);background:rgba(201,168,76,.07);border-bottom-left-radius:0;border-bottom-right-radius:0;}
+    .multi-combo-list{display:flex;flex-direction:column;gap:4px;padding:6px 8px;background:rgba(201,168,76,.04);border:1px solid rgba(201,168,76,.2);border-top:none;border-radius:0 0 5px 5px;margin-bottom:4px;}
+    .multi-combo-btn{width:100%;padding:7px 10px;background:rgba(0,0,0,.3);border:1px solid rgba(201,168,76,.2);border-radius:4px;color:#e8c97a;font-size:11px;cursor:pointer;text-align:left;font-family:inherit;transition:all .12s;}
+    .multi-combo-btn:hover{background:rgba(201,168,76,.12);border-color:rgba(201,168,76,.5);}
+    .multi-build-panel{background:rgba(201,168,76,.04);border:1px solid rgba(201,168,76,.3);border-radius:6px;padding:8px 10px;margin-bottom:6px;}
+    .mbp-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;}
+    .mbp-title{font-size:11px;font-weight:700;color:var(--gold);}
+    .mbp-counter{font-size:10px;color:var(--txd);background:rgba(0,0,0,.3);padding:2px 8px;border-radius:10px;}
+    .mbp-slots{display:flex;flex-wrap:wrap;gap:4px;min-height:26px;margin-bottom:6px;padding:4px 0;border-bottom:1px solid rgba(201,168,76,.12);align-items:center;}
+    .mbp-slot{display:inline-flex;align-items:center;gap:4px;background:rgba(201,168,76,.15);border:1px solid rgba(201,168,76,.4);border-radius:3px;padding:2px 7px;font-size:10px;color:#e8c97a;cursor:pointer;transition:all .1s;}
+    .mbp-slot:hover{background:rgba(122,28,28,.35);border-color:rgba(233,69,96,.5);color:#e94560;}
+    .mbp-avail{display:flex;flex-direction:column;gap:3px;margin-bottom:6px;}
+    .mbp-act-btn{padding:5px 9px;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.1);border-radius:4px;color:var(--tx);font-size:10px;cursor:pointer;text-align:left;font-family:inherit;transition:all .12s;}
+    .mbp-act-btn:hover:not(:disabled){background:rgba(201,168,76,.1);border-color:rgba(201,168,76,.4);color:#e8c97a;}
+    .mbp-act-btn:disabled{opacity:.3;cursor:not-allowed;}
+    .mbp-foot{display:flex;gap:6px;}
+    .mbp-exec{flex:1;padding:7px;background:rgba(74,222,128,.12);border:1px solid rgba(74,222,128,.4);border-radius:4px;color:#4ade80;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .12s;}
+    .mbp-exec:hover{background:rgba(74,222,128,.22);}
+    .mbp-cancel{padding:7px 10px;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.1);border-radius:4px;color:var(--txd);font-size:10px;cursor:pointer;font-family:inherit;transition:all .12s;}
+    .mbp-cancel:hover{background:rgba(233,69,96,.08);border-color:rgba(233,69,96,.3);color:#e94560;}
+    .mb-lbl{font-size:9px;text-transform:uppercase;letter-spacing:1.5px;color:rgba(201,168,76,.45);margin-bottom:4px;}
+    .mb-preset-btn{padding:5px 10px;background:rgba(201,168,76,.08);border:1px solid rgba(201,168,76,.28);border-radius:4px;color:#e8c97a;font-size:10px;cursor:pointer;font-family:inherit;transition:all .12s;}
+    .mb-preset-btn:hover{background:rgba(201,168,76,.18);border-color:rgba(201,168,76,.55);}
+    #mbov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:300;align-items:center;justify-content:center;}
+    #mbov.show{display:flex;}
+    .acard-recarga{border-color:rgba(100,149,237,.35) !important;cursor:not-allowed;opacity:.6;}
+    .acard-recarga:hover{border-color:rgba(100,149,237,.35) !important;background:initial !important;}
+    .rec-badge{background:rgba(100,149,237,.15);color:#6495ed;border-radius:3px;padding:2px 5px;font-size:9px;flex-shrink:0;}
+    .rec-ready{background:rgba(74,222,128,.08);border:1px solid rgba(74,222,128,.25);border-radius:4px;padding:4px 10px;font-size:10px;color:#4ade80;margin-bottom:4px;display:flex;align-items:center;gap:6px;}
+    .aura-card{background:rgba(167,139,250,.05);border:1px solid rgba(167,139,250,.25);border-radius:5px;padding:7px 10px;margin-bottom:4px;display:flex;align-items:center;gap:8px;}
+    .aura-card-info{flex:1;min-width:0;}
+    .aura-card-name{font-size:11px;font-weight:700;color:#a78bfa;}
+    .aura-card-meta{font-size:10px;color:var(--txd);}
+    .aura-cfg-btn{padding:3px 8px;background:rgba(167,139,250,.12);border:1px solid rgba(167,139,250,.3);border-radius:3px;color:#a78bfa;font-size:10px;cursor:pointer;font-family:inherit;white-space:nowrap;}
+    .aura-cfg-btn:hover{background:rgba(167,139,250,.25);}
+    .faura{background:rgba(167,139,250,.04);border:1px solid rgba(167,139,250,.2);border-radius:5px;padding:8px 10px;margin-bottom:5px;}
+    .faura1{display:flex;gap:6px;align-items:center;margin-bottom:6px;}
+    .faura1 input{flex:1;}
+    .aov-chk-row{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:4px;cursor:pointer;transition:background .1s;}
+    .aov-chk-row:hover{background:rgba(167,139,250,.08);}
+    .aov-chk-row label{cursor:pointer;flex:1;font-size:12px;text-transform:none;letter-spacing:0;color:var(--tx);}
+    .roll-mode-sel{display:flex;gap:4px;padding:3px 0 6px;border-bottom:1px solid rgba(255,255,255,.06);margin-bottom:3px;}
+    .rm-btn{flex:1;padding:5px 0;font-size:10px;border:1px solid var(--brd);background:rgba(0,0,0,.22);color:var(--txd);border-radius:4px;cursor:pointer;font-family:inherit;transition:all .12s;text-align:center;letter-spacing:.3px;line-height:1;}
+    .rm-btn:hover{filter:brightness(1.3);}
+    .rm-btn.rm-normal.rm-act{border-color:rgba(255,255,255,.28);color:var(--tx);background:rgba(255,255,255,.07);}
+    .rm-btn.rm-ventaja.rm-act{border-color:rgba(74,222,128,.55);color:var(--ju);background:rgba(74,222,128,.1);}
+    .rm-btn.rm-desventaja.rm-act{border-color:rgba(233,69,96,.55);color:var(--en);background:rgba(233,69,96,.1);}
+    .rm-btn.rm-auto.rm-act{border-color:rgba(251,146,60,.6);color:#fb923c;background:rgba(251,146,60,.12);}
+    .rm-crit-wrap{display:flex;align-items:center;gap:4px;padding:3px 6px;border:1px solid rgba(251,146,60,.35);border-radius:4px;background:rgba(251,146,60,.07);cursor:pointer;user-select:none;font-size:10px;color:#fb923c;white-space:nowrap;}
+    .rm-crit-wrap input{accent-color:#fb923c;width:12px;height:12px;cursor:pointer;}
+
+    /* INITIATIVE LIST */
+    #ilist{display:flex;flex-direction:column;gap:4px;}
+    .mc{display:flex;align-items:center;gap:6px;border-radius:5px;padding:6px 10px;border:1px solid transparent;transition:all .15s;}
+    .mc.f-en{background:rgba(233,69,96,.07);border-color:rgba(233,69,96,.25);}
+    .mc.f-al{background:rgba(91,164,245,.06);border-color:rgba(91,164,245,.22);}
+    .mc.f-ju{background:rgba(74,222,128,.06);border-color:rgba(74,222,128,.22);}
+    .mc.mc-act.f-en{border-color:rgba(233,69,96,.6);box-shadow:0 0 8px rgba(233,69,96,.12);}
+    .mc.mc-act.f-al{border-color:rgba(91,164,245,.6);box-shadow:0 0 8px rgba(91,164,245,.12);}
+    .mc.mc-act.f-ju{border-color:rgba(74,222,128,.6);box-shadow:0 0 8px rgba(74,222,128,.12);}
+    .mc.mc-turn{opacity:.35;}
+    .mc.mc-dead{opacity:.2;border-style:dashed;}
+    .mc-i{font-size:11px;font-weight:700;min-width:22px;text-align:center;flex-shrink:0;color:rgba(255,255,255,.5);}
+    .mc-n{flex:1;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .mc-stats{display:flex;align-items:center;gap:6px;flex-shrink:0;}
+    .mc-ca{font-size:10px;color:var(--tx);white-space:nowrap;background:rgba(255,255,255,.07);padding:1px 4px;border-radius:3px;border:1px solid rgba(255,255,255,.1);}
+    .mc-bar{width:40px;height:3px;background:rgba(0,0,0,.3);border-radius:2px;overflow:hidden;}
+    .mc-fill{height:100%;border-radius:2px;}
+    .mc-ht{font-size:10px;color:var(--txd);min-width:36px;text-align:right;}
+    .mc-ctrl{display:flex;gap:2px;}
+    .mc-ck{font-size:10px;color:var(--txd);}
+    .deadsep{font-size:9px;text-transform:uppercase;letter-spacing:1.5px;color:var(--txd);text-align:center;padding:5px 0 2px;opacity:.4;}
+    .btn-res{padding:2px 7px;font-size:10px;background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.3);color:var(--ju);border-radius:3px;cursor:pointer;white-space:nowrap;transition:all .12s;font-family:inherit;flex-shrink:0;}
+    .btn-res:hover{background:rgba(74,222,128,.22);border-color:rgba(74,222,128,.6);}
+    @keyframes resucitado{0%,100%{box-shadow:none;border-color:transparent;}20%{box-shadow:0 0 10px rgba(74,222,128,.5);border-color:rgba(74,222,128,.8);}60%{box-shadow:0 0 6px rgba(74,222,128,.3);border-color:rgba(74,222,128,.5);}}
+    .mc-resucitado{animation:resucitado 2s ease;}
+    #resov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:350;align-items:center;justify-content:center;}
+    #resov.show{display:flex;}
+    .hbtn{width:19px;height:19px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05);color:var(--tx);border-radius:3px;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;transition:background .12s;flex-shrink:0;}
+    .hbtn:hover{background:rgba(255,255,255,.12);}
+    .hpin{width:38px;height:19px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15);border-radius:3px;color:var(--tx);font-size:11px;text-align:center;padding:0 2px;outline:none;}
+    .hpin:focus{border-color:rgba(255,255,255,.35);}
+    .hbtn-dmg{height:19px;padding:0 5px;border:1px solid rgba(233,69,96,.35);background:rgba(233,69,96,.1);color:#e94560;border-radius:3px;cursor:pointer;font-size:10px;white-space:nowrap;transition:background .12s;flex-shrink:0;}
+    .hbtn-dmg:hover{background:rgba(233,69,96,.22);}
+    .hbtn-heal{height:19px;padding:0 5px;border:1px solid rgba(74,222,128,.3);background:rgba(74,222,128,.08);color:#4ade80;border-radius:3px;cursor:pointer;font-size:10px;white-space:nowrap;transition:background .12s;flex-shrink:0;}
+    .hbtn-heal:hover{background:rgba(74,222,128,.18);}
+
+    /* DEFENSE SECTION */
+    .def-toggle{display:flex;align-items:center;gap:6px;cursor:pointer;padding:5px 8px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:5px;font-size:11px;font-weight:600;color:var(--txd);user-select:none;transition:background .12s;}
+    .def-toggle:hover{background:rgba(255,255,255,.09);}
+    .def-chev{font-size:9px;margin-left:auto;transition:transform .15s;display:inline-block;}
+    .def-badge{font-size:9px;padding:1px 6px;border-radius:10px;background:rgba(91,164,245,.18);color:#93c5fd;border:1px solid rgba(91,164,245,.3);}
+    .def-section{background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.07);border-radius:4px;padding:6px 8px;margin-top:5px;}
+    .def-sec-title{font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--txd);margin-bottom:5px;font-weight:600;}
+    .def-checks{display:flex;flex-wrap:wrap;gap:3px;}
+    .def-chk{display:inline-flex;align-items:center;gap:3px;font-size:10px;cursor:pointer;padding:2px 5px;border-radius:3px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.03);transition:all .1s;white-space:nowrap;}
+    .def-chk:has(input:checked){background:rgba(91,164,245,.15);border-color:rgba(91,164,245,.4);color:#93c5fd;}
+    .def-chk input{width:11px;height:11px;cursor:pointer;accent-color:#5ba4f5;}
+    /* DAMAGE TYPE MODAL */
+    #dtov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:400;align-items:center;justify-content:center;}
+    #dtov.show{display:flex;}
+    .dtbox{background:var(--bg2);border:1px solid var(--brd);border-radius:8px;padding:16px 18px;width:310px;max-width:95vw;display:flex;flex-direction:column;gap:10px;}
+    .dtbox-hdr{display:flex;align-items:center;justify-content:space-between;font-size:12px;font-weight:700;}
+    .dto-row{display:flex;gap:10px;align-items:flex-end;}
+    .dto-row .fg{flex:1;}
+    .dto-preview{min-height:22px;font-size:11px;padding:5px 8px;background:rgba(255,255,255,.04);border-radius:4px;border:1px solid rgba(255,255,255,.08);color:var(--txd);}
+    .dto-btns{display:flex;gap:8px;}
+    .dto-btns .btn{flex:1;}
+
+    /* TARGET MODAL */
+    #tov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:300;align-items:center;justify-content:center;}
+    #tov.show{display:flex;}
+    .trow{display:flex;align-items:center;gap:9px;padding:8px 11px;background:var(--bg);border:1px solid var(--brd);border-radius:5px;cursor:pointer;margin-bottom:4px;transition:all .12s;}
+    .trow:hover{border-color:rgba(255,255,255,.25);filter:brightness(1.2);}
+    .trow.f-en{border-left:3px solid rgba(233,69,96,.5);}
+    .trow.f-al{border-left:3px solid rgba(91,164,245,.5);}
+    .trow.f-ju{border-left:3px solid rgba(74,222,128,.5);}
+    .trow-n{flex:1;font-size:12px;font-weight:600;}
+    .trow-ac{font-size:11px;padding:1px 5px;border-radius:3px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);}
+    .trow-hp{font-size:10px;color:var(--txd);}
+
+    /* VICTORY OVERLAY */
+    #vov{display:none;position:fixed;inset:0;z-index:600;align-items:center;justify-content:center;overflow:hidden;}
+    #vov.show{display:flex;}
+    #vov.v-heroes{background:rgba(0,0,0,.9);}
+    #vov.v-enemies{background:rgba(15,0,0,.93);}
+    .vbox{position:relative;background:var(--bg2);border-radius:14px;padding:30px 32px 24px;width:430px;max-width:95vw;text-align:center;display:flex;flex-direction:column;align-items:center;gap:14px;z-index:1;border:1px solid var(--brd);}
+    .v-heroes .vbox{border-color:rgba(201,168,76,.55);box-shadow:0 0 80px rgba(255,215,0,.15),0 8px 40px rgba(0,0,0,.6);}
+    .v-enemies .vbox{border-color:rgba(233,69,96,.4);box-shadow:0 0 80px rgba(233,69,96,.1),0 8px 40px rgba(0,0,0,.6);}
+    .vtitle{font-size:36px;font-weight:900;font-family:'Cinzel',Georgia,serif;letter-spacing:2px;line-height:1.1;animation:vtitleIn .5s cubic-bezier(.175,.885,.32,1.275) both;}
+    @keyframes vtitleIn{from{opacity:0;transform:scale(.7);}to{opacity:1;transform:scale(1);}}
+    .v-heroes .vtitle{color:#FFD700;text-shadow:0 0 40px rgba(255,215,0,.6);}
+    .v-enemies .vtitle{color:#e94560;text-shadow:0 0 30px rgba(233,69,96,.5);}
+    .vsub{font-size:13px;font-weight:600;letter-spacing:.5px;animation:vsub .4s .2s ease both;}
+    @keyframes vsub{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+    .v-heroes .vsub{color:var(--tx);}
+    .v-enemies .vsub{color:var(--txd);}
+    .vstats{display:grid;grid-template-columns:1fr 1fr;gap:7px;width:100%;animation:vsub .4s .35s ease both;}
+    .vstat{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:7px;padding:9px 10px;}
+    .vstat-n{font-size:9px;color:var(--txd);text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px;}
+    .vstat-v{font-size:22px;font-weight:800;color:var(--gold);}
+    .vbtns{display:flex;gap:10px;width:100%;animation:vsub .4s .5s ease both;}
+    .vbtns .btn{flex:1;font-size:11px;}
+    .vparticle{position:absolute;pointer-events:none;border-radius:2px;animation:vpart linear forwards;}
+    @keyframes vpart{0%{transform:translateY(0) rotate(0deg) scale(1);opacity:.9;}80%{opacity:.5;}100%{transform:translateY(-110vh) rotate(540deg) scale(.3);opacity:0;}}
+
+    /* LOG PANEL */
+    .log-rnd-sep{font-size:9px;text-transform:uppercase;letter-spacing:2px;color:var(--txd);text-align:center;padding:5px 0 2px;opacity:.5;border-top:1px solid var(--brd);margin-top:3px;}
+    .log-rnd-sep:first-child{border-top:none;margin-top:0;}
+    .lentry{background:var(--bg3);border:1px solid var(--brd);border-radius:5px;padding:7px 9px;cursor:pointer;transition:border-color .12s,background .12s;}
+    .lentry:hover{border-color:rgba(255,255,255,.2);}
+    .lentry.lsel{background:var(--bg4);border-color:rgba(255,255,255,.28);}
+    .lentry.f-en{border-left:2px solid rgba(233,69,96,.5);}
+    .lentry.f-al{border-left:2px solid rgba(91,164,245,.5);}
+    .lentry.f-ju{border-left:2px solid rgba(74,222,128,.5);}
+    .lhead{display:flex;align-items:center;gap:5px;margin-bottom:4px;}
+    .lcname{font-size:11px;font-weight:700;}
+    .laname{font-size:10px;color:var(--txd);}
+    .lrow{font-size:10px;color:var(--txd);display:flex;gap:5px;align-items:center;margin-top:2px;}
+    .lv{color:var(--tx);font-weight:700;font-size:12px;}
+    .lrow.latk .lv{color:rgba(255,255,255,.8);}
+    .lrow.lsv .lv{color:var(--al);}
+    .lrow.ldmg .lv{color:var(--gold);}
+    .lres{color:var(--ju);font-size:9px;}
+    .log-empty{text-align:center;color:var(--txd);font-size:11px;padding:20px;opacity:.6;}
+    .lcrit{color:var(--gold);font-weight:700;font-size:11px;letter-spacing:.03em;}
+    @keyframes critpop{0%{opacity:0;transform:scale(1.25);}60%{opacity:1;transform:scale(1.05);}100%{transform:scale(1);}}
+    .lentry.crit-entry{border-color:rgba(201,168,76,0.45)!important;background:rgba(201,168,76,0.06)!important;}
+    .lentry.crit-entry .lcname{color:var(--gold);}
+    /* ── Log new structure ── */
+    .lbadge{display:inline-block;padding:1px 6px;border-radius:3px;font-size:9px;font-weight:600;letter-spacing:.3px;margin-left:3px;vertical-align:middle;}
+    .lbadge-vent{background:rgba(74,222,128,.12);color:#4ade80;border:1px solid rgba(74,222,128,.25);}
+    .lbadge-des{background:rgba(233,69,96,.12);color:#e94560;border:1px solid rgba(233,69,96,.25);}
+    .lbadge-n{background:rgba(255,255,255,.05);color:var(--txd);border:1px solid rgba(255,255,255,.1);}
+    .ltgt{font-size:10px;color:var(--txd);padding:3px 0 2px;margin-top:2px;border-top:1px solid rgba(255,255,255,.05);display:flex;align-items:center;gap:4px;}
+    .ltgt b{color:var(--tx);}
+    .latk-row{font-size:10px;color:var(--txd);margin-top:3px;display:flex;align-items:baseline;gap:4px;flex-wrap:wrap;}
+    .latk-lbl{font-size:9px;color:rgba(255,255,255,.3);min-width:34px;flex-shrink:0;text-transform:uppercase;letter-spacing:.3px;}
+    .ldmg-row{font-size:10px;color:#93c5fd;margin-top:1px;padding-left:10px;display:flex;align-items:center;gap:4px;flex-wrap:wrap;}
+    .lfoot{display:flex;align-items:center;justify-content:space-between;padding-top:4px;margin-top:5px;border-top:1px solid rgba(255,255,255,.07);}
+    .lfoot-total{font-size:11px;color:var(--gold);font-weight:700;}
+    .lfoot-kill{font-size:10px;color:var(--en);font-weight:700;}
+    #logclear{font-size:10px;color:var(--txd);cursor:pointer;text-decoration:underline;background:none;border:none;color:var(--txd);cursor:pointer;font-family:inherit;}
+    #logclear:hover{color:var(--tx);}
+    #log-stats{font-size:9px;color:var(--txd);padding:5px 10px;border-bottom:1px solid var(--brd);display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:rgba(0,0,0,.18);}
+    #log-stats .ls-val{color:var(--tx);font-weight:700;}
+    #log-stats .ls-crit{color:var(--gold);font-weight:700;}
+
+    /* FORM */
+    #tab-form{flex-direction:column;overflow-y:auto;padding:13px 15px;}
+    .sec-lbl{font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--txd);margin-bottom:8px;}
+    .ftgl{display:flex;border:1px solid var(--brd);border-radius:6px;overflow:hidden;width:fit-content;margin-bottom:12px;}
+    .fb{padding:5px 13px;font-size:12px;cursor:pointer;background:transparent;border:none;color:var(--txd);transition:all .12s;font-family:inherit;}
+    .fb.f-en{background:rgba(233,69,96,.18);color:var(--en);}
+    .fb.f-al{background:rgba(91,164,245,.16);color:var(--al);}
+    .fb.f-ju{background:rgba(74,222,128,.13);color:var(--ju);}
+    .fgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;max-width:620px;}
+    .fg{display:flex;flex-direction:column;gap:4px;}
+    .fg.full{grid-column:1/-1;}
+    label{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--txd);}
+    input[type=text],input[type=number],select{padding:7px 9px;background:var(--bg3);border:1px solid var(--brd);border-radius:5px;color:var(--tx);font-size:12px;outline:none;transition:border-color .12s;width:100%;font-family:inherit;}
+    input:focus,select:focus{border-color:rgba(255,255,255,.25);}
+    option{background:#1a1a2e;color:#e0e0e0;}
+    option:checked{background:#0f3460;color:#e8c97a;}
+    input[type=checkbox]{width:12px;height:12px;cursor:pointer;accent-color:var(--ju);flex-shrink:0;}
+
+    /* action cards form */
+    .fac{background:var(--bg);border:1px solid var(--brd);border-radius:5px;padding:8px 9px;margin-bottom:5px;}
+    .fac1{display:flex;align-items:center;gap:6px;margin-bottom:6px;}
+    .fac1 input{flex:1;}
+    .attgl{display:flex;border:1px solid var(--brd);border-radius:4px;overflow:hidden;flex-shrink:0;}
+    .atb{padding:3px 8px;font-size:11px;cursor:pointer;background:transparent;border:none;color:var(--txd);transition:all .12s;font-family:inherit;}
+    .atb.atk{background:rgba(255,255,255,.08);color:rgba(255,255,255,.7);}
+    .atb.sav{background:rgba(91,164,245,.12);color:var(--al);}
+    .atb.rea{background:rgba(251,146,60,.12);color:#fb923c;}
+    .acard-reaccion{border-color:rgba(251,146,60,.35);}
+    .acard-reaccion:hover{border-color:rgba(251,146,60,.6);background:rgba(251,146,60,.06);}
+    .acard-reaccion-usada{border-color:rgba(251,146,60,.15) !important;opacity:.45;cursor:not-allowed;}
+    .acard-reaccion-usada:hover{border-color:rgba(251,146,60,.15) !important;background:initial !important;}
+    .rea-badge{background:rgba(251,146,60,.12);color:#fb923c;border-radius:3px;padding:2px 5px;font-size:9px;flex-shrink:0;}
+    .reac-prompt{display:flex;align-items:center;gap:8px;background:rgba(251,146,60,.08);border:1px solid rgba(251,146,60,.35);border-radius:6px;padding:7px 10px;margin-bottom:6px;flex-wrap:wrap;}
+    .reac-prompt-info{flex:1;min-width:0;}
+    .reac-prompt-cname{font-size:10px;font-weight:700;color:#fb923c;}
+    .reac-prompt-aname{font-size:10px;color:var(--txd);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .reac-prompt-btn{padding:4px 10px;background:rgba(251,146,60,.15);border:1px solid rgba(251,146,60,.4);border-radius:4px;color:#fb923c;font-size:10px;cursor:pointer;font-family:inherit;white-space:nowrap;}
+    .reac-prompt-btn:hover{background:rgba(251,146,60,.28);}
+    .reac-prompt-dis{padding:4px 8px;background:transparent;border:1px solid rgba(255,255,255,.1);border-radius:4px;color:var(--txd);font-size:10px;cursor:pointer;font-family:inherit;}
+    .reac-prompt-dis:hover{color:#e94560;border-color:rgba(233,69,96,.3);}
+    .fasec{margin-bottom:6px;}
+    .fasec-t{font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--txd);margin-bottom:3px;}
+    .irow{display:flex;gap:6px;align-items:flex-end;}
+    .irow .fg{flex:1;}
+    .dlist{display:flex;flex-direction:column;gap:5px;}
+    .drow{display:grid;grid-template-columns:42px 62px 52px 1fr auto auto;gap:5px;align-items:center;}
+    .dcnt{width:100%;}
+    .drow .dbon{width:100%;}
+    .drow .dtyp{width:100%;}
+    .drow-res{display:flex;align-items:center;gap:3px;cursor:pointer;justify-content:center;}
+    .drow-res span{font-size:10px;color:var(--ju);}
+    .ab-row{display:flex;align-items:center;gap:7px;}
+    .ab-lbl{font-size:12px;color:var(--txd);white-space:nowrap;}
+    .ab-in{width:70px;}
+    .rem{width:21px;height:21px;flex-shrink:0;background:rgba(233,69,96,.08);border:1px solid rgba(233,69,96,.25);color:#e94560;border-radius:3px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;font-family:inherit;}
+    .rem:hover{background:rgba(233,69,96,.2);}
+    .acard-unlocked{border-color:rgba(74,222,128,.4)!important;background:rgba(74,222,128,.05)!important;}
+    .acard-conc{border-left:3px solid rgba(167,139,250,.5)!important;}
+    .afect-ctr{display:flex;align-items:center;gap:5px;padding:4px 11px;background:rgba(91,200,244,.05);border:1px solid rgba(91,200,244,.2);border-top:none;border-radius:0 0 5px 5px;font-size:10px;}
+    .afect-lbl{color:rgba(91,200,244,.8);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .afect-mbtn{width:20px;height:20px;border:1px solid rgba(91,200,244,.35);background:rgba(91,200,244,.08);color:#5bc8f4;border-radius:3px;cursor:pointer;font-size:13px;line-height:1;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:inherit;}
+    .afect-mbtn:hover:not(:disabled){background:rgba(91,200,244,.2);}
+    .afect-mbtn:disabled{opacity:.3;cursor:not-allowed;}
+    .afect-val{min-width:22px;text-align:center;font-weight:700;font-size:12px;}
+    .afect-val.amax{color:var(--en);}
+    .afect-val.azero{color:var(--txd);}
+    .afect-val.amid{color:#5bc8f4;}
+    .afect-of{color:var(--txd);}
+    .afect-warn{color:var(--en);font-size:9px;white-space:nowrap;}
+
+    /* MODALS concentracion */
+    #cov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:350;align-items:center;justify-content:center;}
+    #cov.show{display:flex;}
+    #consov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:350;align-items:center;justify-content:center;}
+    #consov.show{display:flex;}
+    .cov-msg{font-size:12px;color:var(--txd);margin:8px 0 14px;line-height:1.7;}
+    .cov-msg b{color:var(--tx);}
+    .consov-result{padding:10px 12px;border-radius:5px;font-size:12px;margin-top:10px;font-weight:600;}
+    .consov-result.pass{background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.3);color:var(--ju);}
+    .consov-result.fail{background:rgba(233,69,96,.08);border:1px solid rgba(233,69,96,.3);color:var(--en);}
+
+    .facts{display:flex;gap:6px;margin-top:12px;flex-wrap:wrap;}
+    .prow{display:flex;flex-direction:column;gap:4px;margin-bottom:7px;padding:7px 9px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:5px;}
+    .prow-main{display:flex;gap:6px;align-items:center;}
+    .prow-main .prow-name{flex:1;min-width:0;}
+    .prow-main input[type=number]{width:54px;}
+    .prow-sv{display:flex;gap:4px;align-items:center;flex-wrap:wrap;}
+    .sv-lbl{font-size:9px;color:var(--txd);text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;}
+    .sv-in{width:40px!important;text-align:center;padding:3px 2px!important;font-size:11px;}
+    .prow-add{width:fit-content;margin-top:4px;}
+    .ferr{color:#e94560;font-size:11px;margin-top:6px;display:none;}
+    .btn{padding:7px 14px;border-radius:5px;cursor:pointer;font-size:12px;border:none;transition:all .12s;font-family:inherit;}
+    .btn-p{background:var(--gold);color:#1a1a2e;border:1px solid var(--gold);font-weight:600;}
+    .btn-p:hover{background:#e8c97a;border-color:#e8c97a;}
+    .btn-s{background:var(--bg4);color:var(--tx);border:1px solid var(--brd);}
+    .btn-s:hover{background:var(--bg3);}
+    .btn-d{background:rgba(122,28,28,.15);color:#e05050;border:1px solid rgba(122,28,28,.4);}
+    .btn-d:hover{background:rgba(122,28,28,.3);}
+    .btn-sm{padding:4px 10px;font-size:11px;}
+
+    /* MODAL init rolls */
+    #mov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:200;align-items:center;justify-content:center;overflow-y:auto;padding:12px 0;}
+    #mov.show{display:flex;}
+    .mbox{background:var(--bg2);border:1px solid var(--brd);border-radius:9px;padding:16px;min-width:270px;max-width:420px;width:92%;max-height:85vh;display:flex;flex-direction:column;overflow:hidden;}
+    .mbox h3{color:var(--tx);margin-bottom:10px;font-size:13px;flex-shrink:0;}
+    #mbody{overflow-y:auto;-webkit-overflow-scrolling:touch;flex:1;min-height:0;}
+    .ir-row{display:flex;align-items:center;justify-content:space-between;padding:5px 9px;background:var(--bg);border-radius:4px;margin-bottom:3px;}
+    .ir-n{font-size:12px;}.ir-d{font-size:10px;color:var(--txd);margin-top:1px;}
+    .ir-v{font-size:14px;font-weight:700;}
+    .ir-v.f-en{color:var(--en);}.ir-v.f-al{color:var(--al);}.ir-v.f-ju{color:var(--ju);}
+    .empty{text-align:center;color:var(--txd);padding:28px 14px;font-size:12px;line-height:1.9;}
+    ::-webkit-scrollbar{width:4px;} ::-webkit-scrollbar-track{background:transparent;} ::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:2px;}
+
+    /* SAVES MODAL */
+    #sov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:300;align-items:center;justify-content:center;}
+    #sov.show{display:flex;}
+    .sbox{background:var(--bg2);border:1px solid var(--brd);border-radius:9px;min-width:300px;max-width:460px;width:92%;max-height:80vh;display:flex;flex-direction:column;overflow:hidden;}
+    .sbox-hdr{padding:11px 15px;border-bottom:1px solid var(--brd);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+    .sbox-hdr h3{font-size:13px;color:var(--tx);}
+    .save-new-sec{padding:10px 13px;border-bottom:1px solid var(--brd);flex-shrink:0;}
+    .save-new-sec label{display:block;font-size:9px;text-transform:uppercase;letter-spacing:1.5px;color:var(--txd);margin-bottom:5px;}
+    .save-new-row{display:flex;gap:6px;}
+    .save-new-row input{flex:1;padding:6px 8px;background:var(--bg3);border:1px solid var(--brd);border-radius:4px;color:var(--tx);font-size:12px;outline:none;}
+    .save-new-row input:focus{border-color:rgba(255,255,255,.25);}
+    .save-cur-banner{margin:8px 13px 0;padding:7px 10px;background:rgba(74,222,128,.07);border:1px solid rgba(74,222,128,.3);border-radius:5px;display:flex;align-items:center;justify-content:space-between;gap:8px;}
+    .save-cur-name{font-size:11px;color:var(--ju);}
+    #saves-body{overflow-y:auto;flex:1;}
+    .save-row{display:flex;align-items:center;gap:8px;padding:9px 13px;border-bottom:1px solid rgba(255,255,255,.04);transition:background .12s;}
+    .save-row:hover{background:rgba(255,255,255,.03);}
+    .save-row-info{flex:1;min-width:0;}
+    .save-row-name{font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .save-row-meta{font-size:10px;color:var(--txd);margin-top:1px;}
+    .save-row.cur-save{background:rgba(74,222,128,.04);border-left:2px solid rgba(74,222,128,.4);}
+    .saves-empty{text-align:center;color:var(--txd);padding:24px 14px;font-size:12px;line-height:1.8;}
+
+    /* FICHAS PANEL */
+    #tab-fichas{flex-direction:column;overflow:hidden;}
+    #fp-top{padding:8px 10px;border-bottom:1px solid var(--brd);flex-shrink:0;display:flex;gap:6px;align-items:center;}
+    #fp-q{flex:1;padding:5px 8px;background:var(--bg3);border:1px solid var(--brd);border-radius:4px;color:var(--tx);font-size:12px;outline:none;}
+    #fp-q:focus{border-color:rgba(255,255,255,.25);}
+    #fp-list{flex:1;overflow-y:auto;padding:6px 8px;display:flex;flex-direction:column;gap:4px;}
+    .fp-card{display:flex;align-items:center;gap:7px;padding:7px 9px;background:var(--bg);border:1px solid var(--brd);border-radius:5px;transition:border-color .12s;}
+    .fp-card:hover{border-color:rgba(255,255,255,.18);}
+    .fp-info{flex:1;min-width:0;}
+    .fp-name{font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .fp-meta{font-size:10px;color:var(--txd);margin-top:1px;}
+    .fp-ftgl{display:flex;border:1px solid var(--brd);border-radius:4px;overflow:hidden;flex-shrink:0;}
+    .fp-fb{padding:3px 7px;font-size:10px;cursor:pointer;background:transparent;border:none;color:var(--txd);transition:all .12s;font-family:inherit;}
+    .fp-fb.sel-en{background:rgba(233,69,96,.18);color:var(--en);}
+    .fp-fb.sel-al{background:rgba(91,164,245,.16);color:var(--al);}
+    .fp-add{padding:4px 9px;font-size:11px;background:rgba(201,168,76,0.1);border:1px solid rgba(201,168,76,0.35);color:var(--gold);border-radius:4px;cursor:pointer;white-space:nowrap;transition:all .12s;font-family:inherit;flex-shrink:0;}
+    .fp-add:hover{background:rgba(201,168,76,0.22);}
+    .fp-empty{text-align:center;color:var(--txd);padding:24px 14px;font-size:12px;line-height:1.8;}
+
+    /* AURA TARGETS MODAL */
+    #aov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:300;align-items:center;justify-content:center;}
+    #aov.show{display:flex;}
+
+    /* HISTORIAL MODAL */
+    #hov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:400;align-items:center;justify-content:center;}
+    #hov.show{display:flex;}
+    .hbox{background:var(--bg2);border:1px solid var(--brd);border-radius:9px;width:94vw;max-width:1150px;height:90vh;display:flex;flex-direction:column;overflow:hidden;}
+    .hbox-hdr{padding:11px 15px;border-bottom:1px solid var(--brd);display:flex;align-items:center;gap:10px;flex-shrink:0;}
+    .hbox-hdr h3{font-size:13px;color:var(--tx);flex:1;}
+    .hbox-body{flex:1;overflow:auto;padding:0;}
+    .htbl{border-collapse:collapse;font-size:12px;width:100%;}
+    .htbl thead tr th{position:sticky;top:0;z-index:2;background:var(--bg2);padding:8px 10px;text-align:center;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--txd);border-bottom:2px solid var(--brd);white-space:nowrap;}
+    .htbl thead tr th.h-name-th{text-align:left;min-width:150px;padding-left:14px;}
+    .htbl thead tr th.h-sum-th{min-width:110px;}
+    .htbl tbody tr:hover{background:rgba(255,255,255,.03);}
+    .htbl td{padding:6px 8px;text-align:center;border-bottom:1px solid rgba(255,255,255,.04);white-space:nowrap;font-size:14px;}
+    .htbl td.h-name{text-align:left;font-size:12px;font-weight:600;padding-left:14px;border-right:1px solid rgba(255,255,255,.06);}
+    .htbl td.h-name.f-en{color:var(--en);border-left:3px solid rgba(233,69,96,.45);}
+    .htbl td.h-name.f-al{color:var(--al);border-left:3px solid rgba(91,164,245,.45);}
+    .htbl td.h-name.f-ju{color:var(--ju);border-left:3px solid rgba(74,222,128,.45);}
+    .htbl td.h-hit{background:rgba(74,222,128,.07);}
+    .htbl td.h-miss{background:rgba(233,69,96,.07);}
+    .htbl td.h-crit{background:rgba(201,168,76,.1);}
+    .htbl td.h-dead{opacity:.35;font-size:12px;}
+    .htbl td.h-empty-cell{color:var(--txd);opacity:.25;font-size:11px;}
+    .htbl td.h-sum{text-align:right;font-size:11px;color:var(--txd);background:rgba(255,255,255,.02);padding-right:14px;border-left:1px solid rgba(255,255,255,.06);}
+    .htbl tr.h-totals td{background:rgba(255,255,255,.04);border-top:2px solid var(--brd);font-size:11px;font-weight:700;color:var(--tx);}
+    .htbl tr.h-totals td.h-name{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--txd);}
+    .h-tbl-empty{text-align:center;color:var(--txd);padding:50px 20px;font-size:13px;line-height:2;}
+  </style>
+</head>
+<body>
+
+<aside id="sb">
+  <div id="sbh"><h2>Iniciativa</h2><p id="ssub">Sin combate activo</p></div>
+  <div id="sbl"></div>
+  <div id="sbf"><button class="btn btn-p" style="width:100%" onclick="openNewForm()">+ Nueva Criatura</button></div>
+</aside>
+
+<div id="main">
+  <div id="topbar">
+    <a id="back-btn" href="/" target="_top">← Fichas</a>
+    <h1>⚔️ Gestor de Combate</h1>
+    <button class="btn btn-s btn-sm" onclick="openSM()" title="Guardar / cargar encuentro">💾 Encuentros</button>
+    <button class="btn btn-s btn-sm" onclick="openHistorial()" title="Ver historial de ataques">📊 Historial</button>
+    <button id="btn-start" class="btn btn-s btn-sm" onclick="startCombat()">Iniciar Combate</button>
+    <button class="btn btn-s btn-sm" onclick="nextTurn()">Siguiente ▶</button>
+    <button class="btn btn-s btn-sm" onclick="resetCombat()" style="color:#e05050">Reiniciar</button>
+  </div>
+  <div class="tabbar">
+    <div class="tab active" data-tab="combat"  onclick="switchTab('combat')">Combate</div>
+    <div class="tab"        data-tab="form"    onclick="switchTab('form')">Añadir / Editar</div>
+    <div class="tab"        data-tab="fichas"  onclick="switchTab('fichas')">Mis Fichas</div>
+  </div>
+
+  <!-- COMBAT: two columns -->
+  <div id="tab-combat" class="tc active">
+    <div id="cleft">
+      <div id="chdr" style="padding:7px 12px;background:var(--bg2);border-bottom:1px solid var(--brd);display:flex;align-items:center;gap:8px;flex-shrink:0;">
+        <span class="rbadge" id="rbadge">Ronda 1</span>
+        <span id="tlabel">Combate no iniciado</span>
+        <button class="btn btn-s btn-sm" onclick="switchTab('form')" title="Añadir criatura al combate">+ Añadir</button>
+      </div>
+      <div id="cleft-body"><div class="empty">No hay criaturas en combate.<br>Añade criaturas y pulsa <b>Iniciar Combate</b>.</div></div>
+    </div>
+    <div id="cright">
+      <div id="cright-hdr">
+        <span>Historial de Tiradas</span>
+        <button id="logclear" onclick="clearLog()">Limpiar</button>
+      </div>
+      <div id="log-stats" style="display:none"></div>
+      <div id="logpanel"><div class="log-empty">Sin tiradas aún</div></div>
+    </div>
+  </div>
+
+  <!-- FORM -->
+  <div id="tab-form" class="tc">
+    <div class="sec-lbl">Nueva criatura</div>
+    <div class="ftgl">
+      <button class="fb f-en" id="fb-en" onclick="setF('enemigo')">Enemigo</button>
+      <button class="fb"      id="fb-al" onclick="setF('aliado')">Aliado</button>
+      <button class="fb"      id="fb-ju" onclick="setF('jugador')">Jugador</button>
+    </div>
+    <div class="fgrid">
+      <div class="fg" id="f-name-wrap"><label>Nombre</label><input type="text" id="f-name" placeholder="Ej: Goblin"></div>
+      <div class="fg npc-f"><label>Tipo</label><input type="text" id="f-type" placeholder="Ej: Humanoide" list="dlt"><datalist id="dlt"></datalist></div>
+      <div class="fg npc-f"><label>Tamaño</label><select id="f-tam"><option>Diminuto</option><option>Pequeño</option><option selected>Mediano</option><option>Grande</option><option>Enorme</option><option>Gargantuesco</option></select></div>
+      <div class="fg npc-f"><label>Vida (HP)</label><input type="number" id="f-hp" placeholder="7" min="1"></div>
+      <div class="fg" id="f-ac-wrap"><label>Clase de Armadura</label><input type="number" id="f-ac" placeholder="15"></div>
+      <div class="fg npc-f"><label>Mod. Iniciativa <span style="font-size:9px;opacity:.6">(1d20+mod)</span></label><input type="number" id="f-im" value="0"></div>
+      <div class="fg" id="f-if-wrap" style="display:none"><label>Iniciativa <span style="font-size:9px;opacity:.6">(valor total)</span></label><input type="number" id="f-if" placeholder="17"></div>
+      <div class="fg full player-f" id="f-sv-wrap" style="display:none">
+        <label>Tiradas de Salvación</label>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-top:5px">
+          <div><div style="font-size:9px;color:var(--txd);text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;text-align:center">FUE</div><input id="f-sv-fue" type="number" placeholder="0" style="width:100%;text-align:center;padding:4px 0"></div>
+          <div><div style="font-size:9px;color:var(--txd);text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;text-align:center">DES</div><input id="f-sv-des" type="number" placeholder="0" style="width:100%;text-align:center;padding:4px 0"></div>
+          <div><div style="font-size:9px;color:var(--txd);text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;text-align:center">CON</div><input id="f-sv-con" type="number" placeholder="0" style="width:100%;text-align:center;padding:4px 0"></div>
+          <div><div style="font-size:9px;color:var(--txd);text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;text-align:center">INT</div><input id="f-sv-int" type="number" placeholder="0" style="width:100%;text-align:center;padding:4px 0"></div>
+          <div><div style="font-size:9px;color:var(--txd);text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;text-align:center">SAB</div><input id="f-sv-sab" type="number" placeholder="0" style="width:100%;text-align:center;padding:4px 0"></div>
+          <div><div style="font-size:9px;color:var(--txd);text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;text-align:center">CAR</div><input id="f-sv-car" type="number" placeholder="0" style="width:100%;text-align:center;padding:4px 0"></div>
+        </div>
+      </div>
+      <div class="fg full" id="bulk-section" style="display:none">
+        <label>Jugadores <span style="font-size:9px;opacity:.6;text-transform:none;letter-spacing:0">(nombre, iniciativa, CA, PG y salvaciones)</span></label>
+        <div id="player-rows" style="margin-top:4px;"></div>
+        <button class="btn btn-s btn-sm prow-add" onclick="addPlayerRow()">+ Añadir jugador</button>
+      </div>
+      <div class="fg npc-f"><label>Número de criaturas</label><input type="number" id="f-cnt" value="1" min="1"></div>
+      <div class="fg full npc-f">
+        <label>Acciones</label>
+        <div id="al"></div>
+        <button class="btn btn-s btn-sm" style="width:fit-content;margin-top:5px" onclick="addAC()">+ Añadir acción</button>
+      </div>
+      <div class="fg full npc-f">
+        <label>Auras / Daño de área</label>
+        <div id="aul"></div>
+        <button class="btn btn-s btn-sm" style="width:fit-content;margin-top:5px;border-color:rgba(167,139,250,.4);color:#a78bfa" onclick="addAura()">+ Añadir aura</button>
+      </div>
+      <div class="fg full npc-f" id="f-def-wrap">
+        <div class="def-toggle" onclick="toggleDef()">🛡️ Defensas<span id="def-badge" class="def-badge" style="display:none"></span><span id="def-chev" class="def-chev">▶</span></div>
+        <div id="def-body" style="display:none">
+          <div class="def-section"><div class="def-sec-title">Resistencias al daño</div><div class="def-checks" id="def-res-checks"></div></div>
+          <div class="def-section"><div class="def-sec-title">Inmunidades al daño</div><div class="def-checks" id="def-imm-checks"></div></div>
+          <div class="def-section"><div class="def-sec-title">Vulnerabilidades al daño</div><div class="def-checks" id="def-vul-checks"></div></div>
+          <div class="def-section"><div class="def-sec-title">Inmunidades a condiciones</div><div class="def-checks" id="def-cond-checks"></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="facts">
+      <button class="btn btn-p" onclick="saveCurrent()">Guardar</button>
+      <button class="btn btn-s" onclick="clearF()">Limpiar</button>
+      <button class="btn btn-d" id="bdel" style="display:none" onclick="delC()">Eliminar</button>
+    </div>
+    <div class="ferr" id="ferr"></div>
+  </div>
+
+  <!-- FICHAS PANEL -->
+  <div id="tab-fichas" class="tc">
+    <div id="fp-top">
+      <input type="text" id="fp-q" placeholder="Buscar ficha por nombre…" oninput="filtrarFichas()">
+      <button class="btn btn-s btn-sm" onclick="cargarFichas()" title="Recargar fichas" style="flex-shrink:0">↺</button>
+    </div>
+    <div id="fp-list"><div class="fp-empty">Selecciona esta pestaña para cargar tus fichas.</div></div>
+  </div>
+</div>
+
+<div id="sov">
+  <div class="sbox">
+    <div class="sbox-hdr">
+      <h3>💾 Encuentros guardados</h3>
+      <button class="btn btn-s btn-sm" onclick="closeSM()">✕</button>
+    </div>
+    <div class="save-new-sec">
+      <label>Guardar encuentro actual como:</label>
+      <div class="save-new-row">
+        <input type="text" id="save-name-in" placeholder="Nombre del encuentro…" maxlength="80" onkeydown="if(event.key==='Enter')guardarNuevo()">
+        <button class="btn btn-p btn-sm" onclick="guardarNuevo()">Guardar nuevo</button>
+      </div>
+      <div id="save-cur-banner" style="display:none" class="save-cur-banner">
+        <span class="save-cur-name" id="save-cur-label">● Encuentro cargado</span>
+        <button class="btn btn-s btn-sm" onclick="actualizarSave()" style="flex-shrink:0">Sobreescribir</button>
+      </div>
+    </div>
+    <div id="saves-body">
+      <div class="saves-empty">Cargando…</div>
+    </div>
+  </div>
+</div>
+
+<div id="mov">
+  <div class="mbox">
+    <h3 id="mtit">Tiradas de Iniciativa</h3>
+    <div id="mbody"></div>
+    <button class="btn btn-p" style="width:100%;margin-top:10px;flex-shrink:0" onclick="closeM()">Comenzar</button>
+  </div>
+</div>
+
+<div id="hov">
+  <div class="hbox">
+    <div class="hbox-hdr">
+      <h3>📊 Historial de Combate</h3>
+      <button class="btn btn-s btn-sm" onclick="exportarCSV()" title="Descargar como CSV para Excel">📥 Exportar CSV</button>
+      <button class="btn btn-s btn-sm" onclick="closeHistorial()">✕</button>
+    </div>
+    <div class="hbox-body"><div id="htable-wrap"></div></div>
+  </div>
+</div>
+
+<div id="aov">
+  <div class="mbox" style="max-width:360px;">
+    <h3 id="aov-tit" style="margin-bottom:4px;font-size:13px">Afectados por el aura</h3>
+    <div id="aov-meta" style="font-size:10px;color:var(--txd);margin-bottom:10px;line-height:1.5"></div>
+    <div id="aov-list" style="max-height:300px;overflow-y:auto;display:flex;flex-direction:column;gap:2px;"></div>
+    <div style="display:flex;gap:6px;margin-top:12px">
+      <button class="btn btn-p" style="flex:1" onclick="saveAuraTargets()">✓ Guardar</button>
+      <button class="btn btn-s" onclick="closeAov()">Cancelar</button>
+    </div>
+  </div>
+</div>
+<div id="tov">
+  <div class="mbox" style="max-width:360px;">
+    <h3 id="ttit" style="margin-bottom:10px">Elegir objetivo</h3>
+    <div id="tbody" style="max-height:320px;overflow-y:auto;"></div>
+    <button id="tov-confirm" class="btn btn-p" style="display:none;width:100%;margin-top:8px" onclick="confirmSaveArea()">Aplicar daño</button>
+    <button id="tov-skip" class="btn btn-s" style="display:none;width:100%;margin-top:8px" onclick="skipMultiSeqSlot()">⏩ Saltar este ataque</button>
+    <button class="btn btn-s" style="width:100%;margin-top:4px" onclick="closeTM()">Cancelar todo</button>
+  </div>
+</div>
+
+<!-- MULTIATAQUE: constructor de combinación -->
+<div id="mbov">
+  <div class="mbox" style="max-width:430px;width:95vw">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <h3 style="margin:0;font-size:13px;color:var(--gold)">⚔️ Multiataque</h3>
+      <span id="mb-cname" style="font-size:11px;color:var(--txd)"></span>
+    </div>
+    <div id="mb-presets" style="display:none;margin-bottom:10px">
+      <div class="mb-lbl">Accesos rápidos</div>
+      <div id="mb-preset-list" style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px"></div>
+    </div>
+    <div class="mb-lbl">Acciones disponibles</div>
+    <div id="mb-actions" style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;margin-bottom:12px"></div>
+    <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:5px">
+      <div class="mb-lbl" style="margin-bottom:0">Combinación actual</div>
+      <span id="mb-counter" style="font-size:10px;color:var(--txd)"></span>
+    </div>
+    <div id="mb-chips" style="display:flex;flex-wrap:wrap;gap:4px;min-height:34px;padding:6px 9px;background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.08);border-radius:5px;margin-bottom:12px;align-items:center"></div>
+    <div class="mbp-foot">
+      <button id="mb-exec" class="mbp-exec" onclick="mbExecute()">✓ Ejecutar combinación</button>
+      <button class="mbp-cancel" onclick="mbCancel()">✕ Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- RESURRECCIÓN -->
+<div id="resov">
+  <div class="mbox" style="max-width:320px">
+    <h3 id="resov-tit" style="margin-bottom:10px">💀→❤️ Resucitar</h3>
+    <div id="resov-body" style="margin-bottom:12px;font-size:12px;color:var(--txd);line-height:1.6"></div>
+    <div style="display:flex;gap:6px;align-items:center;margin-bottom:12px">
+      <label style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--txd);white-space:nowrap">PG:</label>
+      <input type="number" id="resov-hp" min="1" value="1" style="flex:1;padding:6px 8px;background:var(--bg3);border:1px solid var(--brd);border-radius:4px;color:var(--tx);font-size:13px;font-weight:700;outline:none;text-align:center">
+    </div>
+    <div style="display:flex;gap:6px">
+      <button class="btn btn-p" style="flex:1;background:rgba(74,222,128,.18);border-color:rgba(74,222,128,.5);color:var(--ju)" onclick="confirmarResucitar()">✨ Resucitar</button>
+      <button class="btn btn-s" style="flex:1" onclick="closeResov()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONCENTRACIÓN: modal cambio -->
+<div id="cov">
+  <div class="mbox" style="max-width:400px">
+    <h3 id="cov-tit" style="margin-bottom:8px">⚠️ Cambiar concentración</h3>
+    <p id="cov-msg" class="cov-msg"></p>
+    <div style="display:flex;gap:6px">
+      <button class="btn btn-p" style="flex:1" onclick="confirmarCambioConcentracion()">Sí, cambiar</button>
+      <button class="btn btn-s" style="flex:1" onclick="closeCOV()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONCENTRACIÓN: salvación CON -->
+<div id="consov">
+  <div class="mbox" style="max-width:420px">
+    <h3 style="margin-bottom:10px">⚠️ Salvación de Concentración</h3>
+    <div id="consov-body"></div>
+    <div id="consov-result-wrap"></div>
+    <div id="consov-btns" style="display:flex;gap:6px;margin-top:12px">
+      <button class="btn btn-p" style="flex:1" onclick="rollConSaveAuto()">🎲 Tirar salvación CON</button>
+      <button class="btn btn-s" style="flex:1" onclick="closeConSOV()">Ignorar</button>
+    </div>
+  </div>
+</div>
+
+<!-- VICTORIA / DERROTA -->
+<div id="vov">
+  <div class="vbox">
+    <div id="vov-title" class="vtitle"></div>
+    <div id="vov-sub" class="vsub"></div>
+    <div class="vstats">
+      <div class="vstat"><div class="vstat-n">Rondas</div><div class="vstat-v" id="vov-rounds">—</div></div>
+      <div class="vstat"><div class="vstat-n">Daño total</div><div class="vstat-v" id="vov-dmg">—</div></div>
+      <div class="vstat"><div class="vstat-n">Críticos</div><div class="vstat-v" id="vov-crits">—</div></div>
+      <div class="vstat"><div class="vstat-n" id="vov-kills-lbl">Bajas enemigas</div><div class="vstat-v" id="vov-kills">—</div></div>
+    </div>
+    <div class="vbtns">
+      <button class="btn btn-d" onclick="resetCombate()">🔄 Nuevo combate</button>
+      <button class="btn btn-s" onclick="vovHistorial()">📊 Ver historial</button>
+    </div>
+  </div>
+</div>
+
+<!-- DAÑO CON TIPO -->
+<div id="dtov">
+  <div class="dtbox">
+    <div class="dtbox-hdr">
+      <span>🗡️ Aplicar daño</span>
+      <button class="btn btn-s btn-sm" onclick="closeDTOV()">✕</button>
+    </div>
+    <div class="dto-row">
+      <div class="fg"><label>Cantidad</label><input type="number" id="dto-amt" min="1" style="width:100%;text-align:center;font-size:15px;font-weight:700;padding:6px 4px" oninput="updateDtoPreview()"></div>
+      <div class="fg"><label>Tipo de daño</label>
+        <select id="dto-type" style="width:100%" onchange="updateDtoPreview()">
+          <optgroup label="Físico">
+            <option value="contundente">Contundente</option>
+            <option value="perforante">Perforante</option>
+            <option value="cortante">Cortante</option>
+            <option value="no_magico">No mágico (físico)</option>
+            <option value="magico">Mágico (físico)</option>
+          </optgroup>
+          <optgroup label="Elemental">
+            <option value="fuego">Fuego</option>
+            <option value="frío">Frío</option>
+            <option value="rayo">Rayo</option>
+            <option value="trueno">Trueno</option>
+            <option value="ácido">Ácido</option>
+          </optgroup>
+          <optgroup label="Especial">
+            <option value="veneno">Veneno</option>
+            <option value="psíquico">Psíquico</option>
+            <option value="necrótico">Necrótico</option>
+            <option value="radiante">Radiante</option>
+            <option value="fuerza">Fuerza</option>
+          </optgroup>
+        </select>
+      </div>
+    </div>
+    <div class="dto-preview" id="dto-preview">—</div>
+    <div class="dto-btns">
+      <button class="btn btn-d" onclick="confirmDmgType()">✓ Aplicar daño</button>
+      <button class="btn btn-s" onclick="closeDTOV()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const DICE_SIDES=['d4','d6','d8','d10','d12'];
+const DADO_TAMANO={Diminuto:4,Pequeño:6,Mediano:8,Grande:10,Enorme:12,Gargantuesco:20};
+const ESCALA_TAMANO={Diminuto:1,Pequeño:2,Mediano:3,Grande:4,Enorme:5,Gargantuesco:6};
+const ABILS=['Fuerza','Destreza','Constitución','Inteligencia','Sabiduría','Carisma'];
+const DMG_TYPES=[
+  {v:'contundente',l:'Contundente'},{v:'perforante',l:'Perforante'},{v:'cortante',l:'Cortante'},
+  {v:'fuego',l:'Fuego'},{v:'frío',l:'Frío'},{v:'rayo',l:'Rayo'},{v:'trueno',l:'Trueno'},{v:'ácido',l:'Ácido'},
+  {v:'veneno',l:'Veneno'},{v:'psíquico',l:'Psíquico'},{v:'necrótico',l:'Necrótico'},{v:'radiante',l:'Radiante'},{v:'fuerza',l:'Fuerza'},
+  {v:'no_magico',l:'No mágico'},{v:'magico',l:'Mágico'}
+];
+const COND_TYPES=[
+  {v:'cegado',l:'Cegado'},{v:'encantado',l:'Encantado'},{v:'asustado',l:'Asustado'},{v:'paralizado',l:'Paralizado'},
+  {v:'envenenado',l:'Envenenado'},{v:'aturdido',l:'Aturdido'},{v:'inconsciente',l:'Inconsciente'},{v:'derribado',l:'Derribado'}
+];
+const DMG_LABELS=Object.fromEntries([...DMG_TYPES,...COND_TYPES].map(x=>[x.v,x.l]));
+let creatures=[],combatOrder=[],turnIndex=-1,round=1,inCombat=false,editId=null,formF='enemigo';
+let combatLog=[],pendingAction=null,selectedLogIdx=-1;
+let multiBuilder=null; // {cid,ai,slots:[{accion}],maxAtk:null|number,predefinedCombos:[]}
+let multiAtkSeq=null; // {cid,ai,slots,done,mode,isAuto,isCritAuto,comboLabel,aName,totalFinalDmg,killedNames,topDefMod}
+let pendingReaction=null;  // {cid, ai} reaction triggered by being hit
+let aovState=null;         // {cid, auraIdx} aura being configured
+let pendingAuras=[];       // [{ownerCid, auraIdx}] queue of auras waiting for DM target selection
+let dtovState=null;        // {cid, amount} pending damage type selection
+let rollMode='normal'; // 'normal' | 'ventaja' | 'desventaja' | 'auto'
+let rollModeManual=false; // true = DM set explicitly, skips size auto-detection
+let autoCrit=false; // only active when rollMode==='auto'
+let unlockedByHit=new Set();
+let concentracionPendiente=null,conSaveData=null,resucitarTarget=null;
+
+const uid=()=>Math.random().toString(36).slice(2,9);
+function parseDice(s){const m=s.trim().match(/^(\d*)d(\d+)([+-]\d+)?$/i);if(!m)return null;return{count:parseInt(m[1]||'1'),sides:parseInt(m[2]),bonus:parseInt(m[3]||'0')};}
+function rollN(n,s){const r=[];for(let i=0;i<n;i++)r.push(Math.floor(Math.random()*s)+1);return r;}
+function rollD20adv(mode){const d1=Math.floor(Math.random()*20)+1;if(mode==='normal')return{roll:d1,dice:[d1]};const d2=Math.floor(Math.random()*20)+1;return{roll:mode==='ventaja'?Math.max(d1,d2):Math.min(d1,d2),dice:[d1,d2]};}
+function setRollMode(m){rollMode=m;rollModeManual=true;if(m!=='auto')autoCrit=false;renderC();}
+function toggleAutoCrit(cb){autoCrit=cb.checked;}
+// ── Constructor de multiataque ──────────────────────────────────────────────
+function openMultiBuilder(cid,ai){
+  const c=creatures.find(x=>x.id===cid);if(!c)return;
+  const a=c.actions[ai];if(!a)return;
+  let maxAtk=null,predefinedCombos=[];
+  if(a.tipo==='multiataque'){
+    predefinedCombos=(a.combinaciones||[]).filter(combo=>combo.length&&combo.some(s=>s.accion));
+    if(predefinedCombos.length){
+      const maxFromCombos=predefinedCombos.reduce((m,combo)=>Math.max(m,combo.reduce((s,sl)=>s+(sl.veces||1),0)),0);
+      if(maxFromCombos>0)maxAtk=maxFromCombos;
+    }
+  }else if(a.multiataque&&a.type==='ataque'){
+    maxAtk=Math.max(2,Math.min(10,a.num_ataques||2));
+  }
+  multiBuilder={cid,ai,slots:[],maxAtk,predefinedCombos};
+  _renderMB();
+}
+function _renderMB(){
+  if(!multiBuilder)return;
+  const{cid,ai,slots,maxAtk,predefinedCombos}=multiBuilder;
+  const c=creatures.find(x=>x.id===cid);if(!c)return;
+  const _allAtk=c.actions.filter(x=>x.tipo!=='multiataque'&&x.name);
+  const _flagged=_allAtk.filter(x=>x.multiataque);
+  const atkActs=_flagged.length?_flagged:_allAtk;
+  document.getElementById('mb-cname').textContent=c.name;
+  // Presets
+  const presetsEl=document.getElementById('mb-presets');
+  if(predefinedCombos.length){
+    presetsEl.style.display='';
+    document.getElementById('mb-preset-list').innerHTML=predefinedCombos.map((combo,ci)=>{
+      const lbl=combo.map(s=>(s.veces||1)>1?`${s.accion} ×${s.veces}`:s.accion).join(' + ');
+      return`<button class="mb-preset-btn" onclick="mbPreset(${ci})">⚔️ ${escH(lbl)}</button>`;
+    }).join('');
+  }else{presetsEl.style.display='none';}
+  // Acciones disponibles
+  const atLimit=!!(maxAtk&&slots.length>=maxAtk);
+  document.getElementById('mb-actions').innerHTML=atkActs.length
+    ?atkActs.map(x=>`<button class="mbp-act-btn"${atLimit?' disabled':''} onclick="mbAddSlot('${x.name.replace(/\\/g,'\\\\').replace(/'/g,"\\'")}')">+ ${escH(x.name)}</button>`).join('')
+    :'<span style="font-size:10px;color:rgba(255,255,255,.25)">Sin acciones de ataque definidas</span>';
+  // Chips
+  const chipsEl=document.getElementById('mb-chips');
+  chipsEl.innerHTML=slots.length
+    ?slots.map((s,i)=>`<span class="mbp-slot" onclick="mbRemoveSlot(${i})" title="Clic para quitar">⚔️ ${escH(s.accion)} ✕</span>`).join('')
+    :'<span style="font-size:10px;color:rgba(255,255,255,.25);font-style:italic">Elige acciones arriba...</span>';
+  // Contador
+  const cntEl=document.getElementById('mb-counter');
+  if(maxAtk){cntEl.textContent=`${slots.length} / ${maxAtk} ataques`;cntEl.style.color=slots.length>=maxAtk?'var(--gold)':'var(--txd)';}
+  else{cntEl.textContent=slots.length?`${slots.length} ${slots.length===1?'ataque':'ataques'}`:'';cntEl.style.color='var(--txd)';}
+  // Botón ejecutar
+  const execBtn=document.getElementById('mb-exec');
+  execBtn.disabled=!slots.length;execBtn.style.opacity=slots.length?'1':'0.45';execBtn.style.cursor=slots.length?'pointer':'not-allowed';
+  document.getElementById('mbov').classList.add('show');
+}
+function mbAddSlot(actionName){
+  if(!multiBuilder)return;
+  const{slots,maxAtk}=multiBuilder;
+  if(maxAtk&&slots.length>=maxAtk)return;
+  multiBuilder={...multiBuilder,slots:[...slots,{accion:actionName}]};
+  _renderMB();
+}
+function mbRemoveSlot(idx){
+  if(!multiBuilder)return;
+  multiBuilder={...multiBuilder,slots:multiBuilder.slots.filter((_,i)=>i!==idx)};
+  _renderMB();
+}
+function mbPreset(presetIdx){
+  if(!multiBuilder)return;
+  const combo=multiBuilder.predefinedCombos[presetIdx];if(!combo)return;
+  const slots=[];
+  combo.forEach(s=>{for(let k=0;k<(s.veces||1);k++)slots.push({accion:s.accion});});
+  multiBuilder={...multiBuilder,slots};
+  _renderMB();
+}
+function mbExecute(){
+  if(!multiBuilder||!multiBuilder.slots.length)return;
+  const{cid,ai,slots}=multiBuilder;
+  mbCancel();
+  // Etiqueta agrupada
+  const grouped=[];
+  slots.forEach(s=>{if(grouped.length&&grouped[grouped.length-1].accion===s.accion)grouped[grouped.length-1].veces++;else grouped.push({accion:s.accion,veces:1});});
+  const comboLabel=grouped.map(s=>s.veces>1?`${s.accion} ×${s.veces}`:s.accion).join(' + ');
+  startMultiSeq(cid,ai,slots.map(s=>({accion:s.accion,veces:1})),comboLabel);
+}
+function mbCancel(){multiBuilder=null;document.getElementById('mbov').classList.remove('show');}
+function dismissReaction(){pendingReaction=null;renderC();}
+
+// ── AURAS ──────────────────────────────────────────────────────────────────
+function addAura(data){
+  const card=document.createElement('div');card.className='faura';
+  const name=data?data.name||'':'';
+  const diceStr=data?data.dice||'1d6':'1d6';
+  const dm=diceStr.match(/^(\d*)d(\d+)/i);
+  const diceN=dm?parseInt(dm[1]||'1'):1;
+  const diceS=dm?parseInt(dm[2]):6;
+  const bonus=data?data.bonus||0:0;
+  const label=data?data.label||'':'' ;
+  const trigger=data?data.trigger||'turno_afectado':'turno_afectado';
+  const diceNOpts=[1,2,3,4,5,6,7,8,10].map(n=>`<option value="${n}"${n===diceN?' selected':''}>${n}</option>`).join('');
+  const diceSides=[4,6,8,10,12,20];
+  const diceSideOpts=diceSides.map(s=>`<option value="${s}"${s===diceS?' selected':''}>d${s}</option>`).join('');
+  card.innerHTML=`<div class="faura1">
+    <input type="text" placeholder="Nombre del aura (ej: Aura Abrasadora)" value="${escH(name)}" style="font-size:11px;padding:4px 7px">
+    <button class="rem" onclick="this.closest('.faura').remove()">×</button>
+  </div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:4px">
+    <div style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--txd)">
+      <span>Daño:</span>
+      <select class="aura-ndice" style="padding:3px 4px;font-size:11px;width:46px">${diceNOpts}</select>
+      <select class="aura-sdice" style="padding:3px 4px;font-size:11px;width:52px">${diceSideOpts}</select>
+    </div>
+    <div style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--txd)">
+      <span>+</span>
+      <input class="aura-bon ab-in" type="number" placeholder="0" value="${bonus||''}" style="width:44px;font-size:12px;font-weight:700;color:var(--gold);text-align:center" title="Bonificador fijo">
+      <input class="aura-lbl" type="text" placeholder="tipo daño (ej: fuego)" value="${escH(label)}" style="width:90px;padding:3px 6px;font-size:10px">
+    </div>
+  </div>
+  <div style="margin-top:5px;display:flex;align-items:center;gap:6px;font-size:10px;color:var(--txd)">
+    Trigger: <select class="aura-trigger" style="flex:1;padding:3px 5px;font-size:10px">
+      <option value="turno_afectado" ${trigger==='turno_afectado'?'selected':''}>Inicio del turno del afectado</option>
+      <option value="fin_turno_afectado" ${trigger==='fin_turno_afectado'?'selected':''}>Fin del turno del afectado</option>
+      <option value="manual" ${trigger==='manual'?'selected':''}>Manual</option>
+    </select>
+  </div>`;
+  document.getElementById('aul').appendChild(card);
+}
+function getAuras(){
+  return[...document.querySelectorAll('#aul .faura')].map(card=>({
+    name:card.querySelector('.faura1 input').value.trim(),
+    dice:`${card.querySelector('.aura-ndice').value}d${card.querySelector('.aura-sdice').value}`,
+    bonus:parseInt(card.querySelector('.aura-bon').value)||0,
+    label:card.querySelector('.aura-lbl').value.trim(),
+    trigger:card.querySelector('.aura-trigger').value
+  })).filter(a=>a.name);
+}
+function openAov(cid,auraIdx){
+  const c=creatures.find(x=>x.id===cid);if(!c)return;
+  const aura=(c.auras||[])[auraIdx];if(!aura)return;
+  aovState={cid,auraIdx};
+  document.getElementById('aov-tit').textContent=`${escH(c.name)} — ${escH(aura.name)}`;
+  document.getElementById('aov-meta').textContent=`${aura.dice}${aura.bonus?`+${aura.bonus}`:''} ${aura.label||'daño'} — ¿Qué criaturas están dentro del área?`;
+  const others=creatures.filter(x=>x.id!==cid&&!isD(x));
+  document.getElementById('aov-list').innerHTML=others.length
+    ?others.map(t=>`<div class="aov-chk-row" onclick="this.querySelector('input').click()">
+        <input type="checkbox" data-id="${t.id}" onclick="event.stopPropagation()" style="width:14px;height:14px;accent-color:#a78bfa;flex-shrink:0;cursor:pointer">
+        <label><span class="fpill ${fc(t.faction)}" style="margin-right:4px">${fl(t.faction)}</span>${escH(t.name)}${!isP(t)?` <span style="color:var(--txd);font-size:10px">(${t.hp}/${t.maxHp} HP)</span>`:''}</label>
+      </div>`).join('')
+    :'<div style="color:var(--txd);font-size:11px;padding:8px">No hay otras criaturas en el combate.</div>';
+  document.getElementById('aov').classList.add('show');
+}
+function processAuraQueue(){
+  if(!pendingAuras.length)return;
+  const{ownerCid,auraIdx}=pendingAuras[0];
+  openAov(ownerCid,auraIdx);
+}
+function saveAuraTargets(){
+  if(!aovState)return;
+  const{cid,auraIdx}=aovState;
+  aovState=null;
+  document.getElementById('aov').classList.remove('show');
+  const checked=[...document.querySelectorAll('#aov-list input[type=checkbox]:checked')].map(el=>el.dataset.id);
+  checked.forEach(tid=>applyAuraDmg(cid,auraIdx,tid));
+  if(!checked.length){renderSB();renderC();renderLog();}
+  pendingAuras.shift();
+  if(pendingAuras.length){processAuraQueue();}else{renderSB();renderC();renderLog();checkVictory();}
+}
+function closeAov(){
+  aovState=null;
+  document.getElementById('aov').classList.remove('show');
+  pendingAuras.shift();
+  if(pendingAuras.length){processAuraQueue();}
+}
+function applyAuraDmg(ownerCid,auraIdx,targetCid){
+  const owner=creatures.find(x=>x.id===ownerCid);if(!owner)return;
+  const aura=(owner.auras||[])[auraIdx];if(!aura)return;
+  const target=creatures.find(x=>x.id===targetCid);if(!target||isP(target))return;
+  const pd=parseDice(aura.dice)||{count:1,sides:6};
+  const rolls=rollN(pd.count,pd.sides);
+  const total=rolls.reduce((s,v)=>s+v,0)+(aura.bonus||0);
+  target.hp=Math.max(0,target.hp-total);
+  const killed=target.hp<=0?target.name:null;
+  combatLog.push({cname:owner.name,faction:owner.faction,aname:aura.name,round,
+    auraDmg:{rolls,bonus:aura.bonus||0,total,label:aura.label||'daño',target:target.name,killed}});
+  if(killed)target.hp=0;
+  renderSB();renderLog();
+}
+function useReaction(cid,ai){
+  const c=creatures.find(x=>x.id===cid);if(!c)return;
+  const a=c.actions[ai];if(!a)return;
+  pendingReaction=null;
+  c.reaccion_usada=true;
+  if(a.recarga)c.recargas[ai]=true;
+  const bonus=a.attackBonus||0;
+  const{roll,dice}=rollD20adv(rollMode);
+  const critical=roll===20;
+  const atk={roll,dice,bonus,total:roll+bonus,critical,advMode:rollMode};
+  rollMode='normal';rollModeManual=false;
+  const dmg=(a.damageEntries&&a.damageEntries.length)?rollDmgEntries(a.damageEntries,critical):null;
+  const totalDmg=dmg?dmg.reduce((s,d)=>s+d.total,0):0;
+  combatLog.push({cname:c.name,faction:c.faction,aname:a.name,round,reaccionUsada:{atk,dmg,totalDmg,trigger:a.trigger}});
+  renderSB();renderC();renderLog();
+}
+
+// ── Multiataque secuencial: un modal de objetivo por cada ataque ──────────────
+function startMultiSeq(cid,ai,combo,comboLabel){
+  const c=creatures.find(x=>x.id===cid);if(!c)return;
+  const a=c.actions[ai];
+  const slots=[];
+  combo.forEach(slot=>{
+    const actionRef=c.actions.find(x=>x.name===slot.accion&&x.tipo!=='multiataque')||null;
+    for(let k=0;k<(slot.veces||1);k++)slots.push({actionRef,slotLabel:slot.accion||'Ataque'});
+  });
+  if(!slots.length)return;
+  const mode=rollMode;const isAuto=mode==='auto';const isCritAuto=isAuto&&autoCrit;
+  rollMode='normal';rollModeManual=false;autoCrit=false;
+  pendingAction=null;
+  multiAtkSeq={cid,ai,slots,done:[],mode,isAuto,isCritAuto,comboLabel,aName:a.name||'Multiataque',totalFinalDmg:0,killedNames:[],topDefMod:null};
+  _showNextMultiTarget();
+}
+function _showNextMultiTarget(){
+  if(!multiAtkSeq)return;
+  const{cid,slots,done}=multiAtkSeq;
+  const c=creatures.find(x=>x.id===cid);if(!c){_finalizeMultiSeq();return;}
+  if(done.length>=slots.length){_finalizeMultiSeq();return;}
+  const{slotLabel}=slots[done.length];
+  const total=slots.length;
+  const alive=creatures.filter(t=>t.id!==cid&&!isD(t));
+  // Sin objetivos vivos → auto-saltar ataques restantes y finalizar
+  if(!alive.length){
+    const seq=multiAtkSeq;
+    while(seq.done.length<seq.slots.length){
+      const{slotLabel}=seq.slots[seq.done.length];
+      seq.done.push({atk:{roll:null,dice:null,bonus:0,total:null,critical:false,advMode:'normal',autoHit:false},hit:false,slotLabel,target:null,dmg:[],skipped:true});
+    }
+    _finalizeMultiSeq();return;
+  }
+  const isEnemigo=c.faction==='enemigo';
+  const grpA=alive.filter(t=>isEnemigo?(t.faction!=='enemigo'):(t.faction==='enemigo'));
+  const grpB=alive.filter(t=>isEnemigo?(t.faction==='enemigo'):(t.faction!=='enemigo'));
+  const atkEsc=isP(c)?0:(ESCALA_TAMANO[c.tamanio||'Mediano']||3);
+  const sb=t=>{if(isP(c)||isP(t))return'';const d=atkEsc-(ESCALA_TAMANO[t.tamanio||'Mediano']||3);return d===1?'<span style="font-size:11px;flex-shrink:0;color:#4ade80">⬆️</span>':d===-1?'<span style="font-size:11px;flex-shrink:0;color:#e94560">⬇️</span>':'';};
+  const trow=t=>`<div class="trow ${fc(t.faction)}" onclick="confirmMultiSeqTarget('${t.id}')">
+    ${sb(t)}<span class="trow-n">${escH(t.name)}</span>
+    ${!isP(t)?`<span class="trow-ac">🛡${t.ac||'?'}</span><span class="trow-hp">${t.hp}/${t.maxHp} HP</span>`:'<span class="trow-hp" style="color:var(--ju)">Jugador</span>'}
+  </div>`;
+  const sep=(lbl,col)=>`<div style="font-size:9px;text-transform:uppercase;letter-spacing:1.5px;color:${col};padding:5px 11px 2px;opacity:.7">${lbl}</div>`;
+  let tbody='';
+  if(!alive.length){tbody='<div class="log-empty">Sin objetivos disponibles</div>';}
+  else if(!grpA.length||!grpB.length){tbody=alive.map(trow).join('');}
+  else{tbody=sep('— Objetivos principales —',isEnemigo?'var(--al)':'var(--en)')+grpA.map(trow).join('')+sep('— Otros —','var(--txd)')+grpB.map(trow).join('');}
+  document.getElementById('ttit').textContent=`${escH(slotLabel)} (${done.length+1}/${total})`;
+  document.getElementById('tbody').innerHTML=tbody;
+  document.getElementById('tov-confirm').style.display='none';
+  document.getElementById('tov-skip').style.display='';
+  document.getElementById('tov').classList.add('show');
+}
+function confirmMultiSeqTarget(targetId){
+  document.getElementById('tov').classList.remove('show');
+  document.getElementById('tov-skip').style.display='none';
+  if(!multiAtkSeq)return;
+  const seq=multiAtkSeq;
+  const{actionRef,slotLabel}=seq.slots[seq.done.length];
+  const c=creatures.find(x=>x.id===seq.cid);if(!c){_finalizeMultiSeq();return;}
+  const target=creatures.find(x=>x.id===targetId);
+  const targetAC=(!target||isP(target))?0:(target.ac||0);
+  let effectiveMode=seq.mode;
+  if(seq.mode==='normal'&&target&&!isP(c)&&!isP(target)){
+    const at=ESCALA_TAMANO[c.tamanio||'Mediano']||3;const df=ESCALA_TAMANO[target.tamanio||'Mediano']||3;
+    if(at-df===1)effectiveMode='ventaja';
+  }
+  let roll,dice,critical,total,hit;
+  const bonus=actionRef?(actionRef.attackBonus||0):0;
+  if(seq.isAuto){
+    roll=null;dice=null;critical=seq.isCritAuto;total=null;hit=true;
+  }else{
+    const r=rollD20adv(effectiveMode);roll=r.roll;dice=r.dice;
+    critical=roll===20;total=roll+bonus;
+    hit=critical||!target||isP(target)||total>=targetAC;
+  }
+  const atk={atk:{roll,dice,bonus,total,critical,advMode:effectiveMode,autoHit:seq.isAuto},hit,slotLabel,target:target?{name:target.name,ac:targetAC}:null,dmg:[]};
+  if(hit&&target&&!isP(target)){
+    const dmgEntries=actionRef&&actionRef.damageEntries&&actionRef.damageEntries.length?actionRef.damageEntries:[{dice:'1d6',bonus:0,label:'',ignoresResistance:false}];
+    atk.dmg=rollDmgEntries(dmgEntries,critical);
+    const{finalDmg,defMod}=calcFinalDmg(target,atk.dmg);
+    const oldHp=target.hp;
+    target.hp=Math.max(0,target.hp-finalDmg);
+    seq.totalFinalDmg+=finalDmg;
+    if(target.hp<=0&&oldHp>0&&!seq.killedNames.includes(target.name))seq.killedNames.push(target.name);
+    if(defMod==='inmune')seq.topDefMod='inmune';
+    else if(defMod&&seq.topDefMod!=='inmune')seq.topDefMod=defMod;
+  }
+  seq.done.push(atk);
+  if(seq.done.length<seq.slots.length){_showNextMultiTarget();}
+  else{_finalizeMultiSeq();}
+}
+function skipMultiSeqSlot(){
+  document.getElementById('tov').classList.remove('show');
+  document.getElementById('tov-skip').style.display='none';
+  if(!multiAtkSeq)return;
+  const seq=multiAtkSeq;
+  const{slotLabel}=seq.slots[seq.done.length];
+  seq.done.push({atk:{roll:null,dice:null,bonus:0,total:null,critical:false,advMode:'normal',autoHit:false},hit:false,slotLabel,target:null,dmg:[],skipped:true});
+  if(seq.done.length<seq.slots.length){_showNextMultiTarget();}
+  else{_finalizeMultiSeq();}
+}
+function _finalizeMultiSeq(){
+  if(!multiAtkSeq)return;
+  const{cid,ai,done,mode,comboLabel,aName,totalFinalDmg,killedNames,topDefMod}=multiAtkSeq;
+  multiAtkSeq=null;
+  const c=creatures.find(x=>x.id===cid);if(!c)return;
+  const a=c.actions[ai];
+  if(done.some(at=>at.hit))unlockedByHit.add(aName);
+  if(a.recarga)c.recargas[ai]=true;
+  combatLog.push({cname:c.name,faction:c.faction,aname:aName,round,multiataques:done,totalDmg:totalFinalDmg,killed:killedNames.length?killedNames.join(', '):null,advMode:mode,multiComboLabel:comboLabel,defMod:topDefMod});
+  advTurn();renderSB();renderC();renderLog();processAuraQueue();checkVictory();
+}
+function fmtB(bonus){return bonus>0?`+${bonus}`:bonus<0?String(bonus):'';}
+function fmtAdvBadge(mode){if(!mode||mode==='normal')return'';if(mode==='auto')return`<span class="lbadge" style="background:rgba(251,146,60,.12);color:#fb923c;border:1px solid rgba(251,146,60,.35)">🎯 auto</span>`;return mode==='ventaja'?`<span class="lbadge lbadge-vent">↑ ventaja</span>`:`<span class="lbadge lbadge-des">↓ desventaja</span>`;}
+function fmtDmgBlock(dmg){if(!dmg||!dmg.length)return'';return dmg.map(d=>{const b=fmtB(d.bonus||0);const crit=d.critical?` <span style="color:var(--gold);font-size:9px">×2 dados</span>`:'';const res=d.res?` <span class="lres">⚡</span>`:'';return`<div class="ldmg-row"><span style="color:var(--txd)">${escH(d.label||'Daño')}:</span> [${d.rolls.join(', ')}]${b} = <span class="lv">${d.total}</span>${crit}${res}</div>`;}).join('');}
+function fmtDefMod(mod){if(!mod)return'';if(mod==='inmune')return`<div class="lrow" style="color:#a78bfa;font-size:10px">🛡 Inmune — daño bloqueado</div>`;if(mod==='resistencia')return`<div class="lrow" style="color:#93c5fd;font-size:10px">⚡ Resistencia — daño reducido a la mitad</div>`;if(mod==='vulnerabilidad')return`<div class="lrow" style="color:#fca5a5;font-size:10px">💥 Vulnerabilidad — daño duplicado</div>`;return '';}
+function fmtD20(atk){
+  if(!atk.dice||atk.dice.length<2){return atk.critical?`[<span style="color:var(--gold);font-weight:700">20</span>]`:`[${atk.roll}]`;}
+  const[d1,d2]=atk.dice;
+  const chosen=atk.roll;
+  const isVent=atk.advMode==='ventaja';
+  const fd=(v,idx)=>{
+    const isChosen=idx===0?(isVent?v>=atk.dice[1]:v<=atk.dice[1]):(isVent?v>atk.dice[0]:v<atk.dice[0]);
+    // If both dice are equal, first die is "chosen"
+    const picked=(d1===d2)?idx===0:isChosen;
+    if(v===20)return`<span style="color:var(--gold);font-weight:700">${v}</span>`;
+    if(picked)return`<b style="color:var(--tx)">${v}</b>`;
+    return`<span style="opacity:.4">${v}</span>`;
+  };
+  const tag=isVent?`<span style="color:var(--ju);font-size:9px">[mayor]</span>`:`<span style="color:var(--en);font-size:9px">[menor]</span>`;
+  return`[${fd(d1,0)}, ${fd(d2,1)}] ${tag}`;
+}
+function hpC(c,m){const p=c/m;return p>.5?'var(--hpg)':p>.25?'var(--hpy)':'var(--hpr)';}
+function fc(f){return f==='enemigo'?'f-en':f==='aliado'?'f-al':'f-ju';}
+function fl(f){return f==='enemigo'?'Enemigo':f==='aliado'?'Aliado':'Jugador';}
+function isD(c){return c.inconsciente||(!isP(c)&&c.hp<=0);}
+function isP(c){return c.faction==='jugador';}
+function stp(){return Math.max(1,parseInt(document.getElementById('hp-step')?.value)||1);}
+function escH(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+// SIDEBAR
+function renderSB(){
+  const el=document.getElementById('sbl'),sub=document.getElementById('ssub');
+  if(!creatures.length){el.innerHTML='<div class="empty" style="padding:12px;font-size:10px;">Sin criaturas</div>';sub.textContent='Sin combate activo';updDL();return;}
+  const src=inCombat?[...combatOrder]:[...creatures];
+  sub.textContent=inCombat?`Ronda ${round} · ${src.length}`:`${creatures.length} criaturas`;
+  const curId=inCombat?combatOrder[turnIndex]?.id:null;
+  const alive=src.filter(c=>!isD(c)),dead=src.filter(c=>isD(c));
+  const rsi=c=>{
+    const iv=inCombat?c.rolledInit:(isP(c)?c.initFixed:(c.initMod>=0?`+${c.initMod}`:c.initMod));
+    const isCur=c.id===curId;
+    return`<div class="si ${fc(c.faction)} ${editId===c.id?'sel':''} ${isCur?'acting':''} ${inCombat&&c.hasTurned&&!isCur?'turned':''} ${isD(c)?'dead-si':''}" onclick="selC('${c.id}')">
+      <span class="si-i">${iv}</span>
+      ${!isP(c)?`<span class="si-d" style="background:${isD(c)?'#333':hpC(c.hp,c.maxHp)}"></span>`:''}
+      <span class="si-n" ${c.concentracion?`title="Concentrado en: ${escH(c.concentracion.nombre)}"`:''}>
+        ${c.concentracion?'🔮 ':''}${escH(c.name)}
+      </span>
+      ${inCombat&&c.hasTurned&&!isCur?'<span class="si-ck">✓</span>':''}
+    </div>`;};
+  let h=alive.map(rsi).join('');
+  if(dead.length)h+=`<div class="ssep">— derrotados —</div>`+dead.map(rsi).join('');
+  el.innerHTML=h;updDL();
+}
+function updDL(){const t=[...new Set(creatures.filter(c=>!isP(c)).map(c=>c.type).filter(Boolean))];document.getElementById('dlt').innerHTML=t.map(t=>`<option value="${escH(t)}">`).join('');}
+function selC(id){
+  editId=id;const c=creatures.find(x=>x.id===id);if(!c)return;
+  setF(c.faction);
+  document.getElementById('f-name').value=c.name;document.getElementById('f-type').value=c.type||'';document.getElementById('f-tam').value=c.tamanio||'Mediano';
+  document.getElementById('f-hp').value=c.maxHp||'';document.getElementById('f-ac').value=c.ac||'';
+  document.getElementById('f-im').value=c.initMod??0;document.getElementById('f-if').value=c.initFixed||'';
+  document.getElementById('f-cnt').value=1;document.getElementById('al').innerHTML='';
+  (c.actions||[]).forEach(a=>addAC(a));
+  document.getElementById('aul').innerHTML='';
+  (c.auras||[]).forEach(a=>addAura(a));
+  if(c.salvaciones){['fue','des','con','int','sab','car'].forEach(k=>{const el=document.getElementById('f-sv-'+k);if(el)el.value=c.salvaciones[k]??'';});}
+  else{['fue','des','con','int','sab','car'].forEach(k=>{const el=document.getElementById('f-sv-'+k);if(el)el.value='';});}
+  setDefs(!isP(c)?{resistencias:c.resistencias||[],inmunidades:c.inmunidades||[],vulnerabilidades:c.vulnerabilidades||[],inmunidades_condicion:c.inmunidades_condicion||[]}:null);
+  document.getElementById('bdel').style.display='';document.getElementById('ferr').style.display='none';
+  switchTab('form');renderSB();
+}
+
+// COMBAT
+function startCombat(){
+  if(!creatures.length)return;
+  const rolls=[];
+  creatures.forEach(c=>{
+    if(isP(c)){c.rolledInit=c.initFixed||0;rolls.push({c,total:c.rolledInit,player:true});}
+    else{const d20=Math.floor(Math.random()*20)+1;c.rolledInit=d20+(c.initMod||0);rolls.push({c,d20,mod:c.initMod||0,total:c.rolledInit});}
+    c.hasTurned=false;
+  });
+  combatOrder=[...creatures].sort((a,b)=>b.rolledInit-a.rolledInit);
+  turnIndex=0;while(turnIndex<combatOrder.length&&isD(combatOrder[turnIndex]))turnIndex++;
+  if(turnIndex>=combatOrder.length)turnIndex=0;
+  round=1;inCombat=true;
+  document.getElementById('btn-start').style.display='none';
+  renderSB();renderC();switchTab('combat');showInitRolls(rolls);
+}
+
+function insertMidCombat(c){
+  if(isP(c)){c.rolledInit=c.initFixed||0;}
+  else{const d20=Math.floor(Math.random()*20)+1;c.rolledInit=d20+(c.initMod||0);
+    combatLog.push({cname:c.name,faction:c.faction,aname:'Iniciativa (mid-combat)',round,initRoll:{d20,mod:c.initMod||0,total:c.rolledInit}});
+  }
+  c.hasTurned=false;
+  let ins=combatOrder.findIndex(x=>x.rolledInit<c.rolledInit);
+  if(ins===-1)ins=combatOrder.length;
+  combatOrder.splice(ins,0,c);
+  if(ins<=turnIndex)turnIndex++;
+  renderSB();renderC();renderLog();
+}
+
+function showInitRolls(rolls){
+  const s=[...rolls].sort((a,b)=>b.total-a.total);
+  document.getElementById('mbody').innerHTML=s.map(r=>`
+    <div class="ir-row"><div>
+      <div class="ir-n">${escH(r.c.name)}</div>
+      <div class="ir-d">${r.player?'Iniciativa manual':`1d20 [${r.d20}] + ${r.mod} = ${r.total}`}</div>
+    </div><div class="ir-v ${fc(r.c.faction)}">${r.total}</div></div>`).join('');
+  document.getElementById('mov').classList.add('show');
+}
+
+function nextTurn(){if(!inCombat||!combatOrder.length)return;advTurn();renderSB();renderC();renderLog();processAuraQueue();}
+
+function advTurn(){
+  combatOrder[turnIndex].hasTurned=true;
+  combatOrder[turnIndex].reaccion_usada=false;
+  pendingReaction=null;
+  unlockedByHit=new Set();
+  rollMode='normal';rollModeManual=false;autoCrit=false;
+  const tot=combatOrder.length;let tries=0;
+  do{
+    turnIndex++;
+    if(turnIndex>=tot){turnIndex=0;round++;combatOrder.forEach(c=>c.hasTurned=false);}
+    tries++;if(tries>tot)break;
+  }while(isD(combatOrder[turnIndex])&&combatOrder.some(c=>!isD(c)));
+  // ── Auras: fin de turno del que acaba ────────────────────────────────────
+  creatures.forEach(owner=>{
+    (owner.auras||[]).forEach((aura,ai)=>{
+      if(aura.trigger==='fin_turno_afectado'&&!isD(owner)){
+        pendingAuras.push({ownerCid:owner.id,auraIdx:ai});
+      }
+    });
+  });
+  // ── Tirar recarga al inicio del nuevo turno ───────────────────────────────
+  const next=combatOrder[turnIndex];
+  // ── Auras: inicio de turno del que empieza ───────────────────────────────
+  creatures.forEach(owner=>{
+    (owner.auras||[]).forEach((aura,ai)=>{
+      if(aura.trigger==='turno_afectado'&&!isD(owner)){
+        pendingAuras.push({ownerCid:owner.id,auraIdx:ai});
+      }
+    });
+  });
+  if(next&&!isP(next)&&next.recargas){
+    (next.actions||[]).forEach((a,ai)=>{
+      if(a.recarga&&next.recargas[ai]){
+        const roll=Math.floor(Math.random()*6)+1;
+        const recharged=roll>=a.recarga;
+        if(recharged)next.recargas[ai]=false;
+        combatLog.push({cname:next.name,faction:next.faction,aname:a.name,round,recargaRoll:{roll,min:a.recarga,recharged}});
+      }
+    });
+  }
+}
+
+function resetCombat(){
+  inCombat=false;turnIndex=-1;round=1;combatOrder=[];combatLog=[];
+  pendingReaction=null;pendingAuras=[];aovState=null;
+  document.getElementById('aov').classList.remove('show');
+  creatures.forEach(c=>{c.hp=c.maxHp;c.hasTurned=false;c.concentracion=null;c.recargas={};c.reaccion_usada=false;});
+  document.getElementById('btn-start').style.display='';
+  renderSB();renderC();renderLog();
+}
+
+function renderC(){
+  document.getElementById('rbadge').textContent=`Ronda ${round}`;
+  const cur=inCombat?combatOrder[turnIndex]:null;
+  document.getElementById('tlabel').textContent=inCombat?(cur?`Turno: ${cur.name}`:''):'Combate no iniciado';
+  if(!inCombat||!combatOrder.length){document.getElementById('cleft-body').innerHTML='<div class="empty">Añade criaturas y pulsa <b>Iniciar Combate</b>.</div>';return;}
+  document.getElementById('cleft-body').innerHTML=renderCurPanel(cur)+`<div><div class="shdr">Iniciativa</div><div id="ilist">${renderIL()}</div></div>`;
+}
+
+function renderReaccionPrompt(){
+  if(!pendingReaction)return'';
+  const c=creatures.find(x=>x.id===pendingReaction.cid);if(!c)return'';
+  const a=c.actions[pendingReaction.ai];if(!a)return'';
+  const hasDmg=a.damageEntries&&a.damageEntries.length&&a.damageEntries[0].dice;
+  const dmgLabel=hasDmg?` (${a.damageEntries.map(d=>d.dice+(d.bonus?`+${d.bonus}`:'')).join('+')})` :'';
+  return`<div class="reac-prompt"><span style="font-size:16px;flex-shrink:0">⚡</span><div class="reac-prompt-info"><div class="reac-prompt-cname">${escH(c.name)}</div><div class="reac-prompt-aname">Reacción disponible: <b>${escH(a.name)}</b>${escH(dmgLabel)}</div></div><button class="reac-prompt-btn" onclick="useReaction('${c.id}',${pendingReaction.ai})">⚡ Usar</button><button class="reac-prompt-dis" onclick="dismissReaction()">Ignorar</button></div>`;
+}
+function renderCurPanel(c){
+  if(!c)return'';
+  const f=fc(c.faction),dead=isD(c),player=isP(c);
+  const pct=!player?Math.max(0,c.hp/c.maxHp*100):0;
+  const visActs=(c.actions||[]).map((a,ai)=>({...a,_i:ai})).filter(a=>a.name);
+  const actsH=(!player&&!dead&&visActs.length)?visActs.map((a)=>{const ai=a._i;
+    // ── Multiataque (legacy y tipo='multiataque') → popup constructor ──────────
+    if((a.multiataque&&a.type==='ataque')||a.tipo==='multiataque'){
+      const badge=`<span class="acbadge" style="background:rgba(201,168,76,.12);color:var(--gold);border-radius:3px;padding:2px 5px;font-size:9px">Multi</span>`;
+      let subLabel='';
+      if(a.tipo==='multiataque'){
+        const combos=(a.combinaciones||[]).filter(combo=>combo.length&&combo.some(s=>s.accion));
+        const _allAtkSub=c.actions.filter(x=>x.tipo!=='multiataque'&&x.name);
+        const _flaggedSub=_allAtkSub.filter(x=>x.multiataque);
+        const atkActs=_flaggedSub.length?_flaggedSub:_allAtkSub;
+        subLabel=combos.length?`${combos.length} preset${combos.length!==1?'s':''}`:atkActs.length?`${atkActs.length} acción${atkActs.length!==1?'es':''}`:  'Construir libremente';
+      }else{
+        subLabel=`×${a.num_ataques||2} ataques`;
+      }
+      return`<div class="acard acard-multi" onclick="openMultiBuilder('${c.id}',${ai})"><div class="acinfo"><div class="acname">⚔️ ${escH(a.name||'Multiataque')}</div><div class="acdice" style="font-size:9px;color:var(--txd)">${subLabel}</div></div>${badge}<span class="achint">▶</span></div>`;
+    }
+    // ── Reacción ──────────────────────────────────────────────────────────────
+    if(a.type==='reaccion'){
+      const usada=c.reaccion_usada;
+      const enRecarga=!!(a.recarga&&(c.recargas||{})[ai]);
+      const atkB=a.attackBonus||0;const atkStr=atkB?`1d20${atkB>=0?'+'+atkB:atkB}`:'';
+      const dmgC=(a.damageEntries||[]).filter(d=>d.dice).map(d=>`<span class="dc dmg">${d.dice}${d.bonus?(d.bonus>0?`+${d.bonus}`:`${d.bonus}`):''}</span>`).join('');
+      const trigLabel=a.trigger==='golpeado'?'⚔️ al ser golpeado':a.trigger==='atacado'?'🎯 al ser atacado':'🖐 manual';
+      const cardCls=`acard-reaccion${usada||enRecarga?' acard-reaccion-usada':''}`;
+      const onclick=usada||enRecarga?'':`onclick="useReaction('${c.id}',${ai})"`;
+      const badge=`<span class="rea-badge">${usada?'Usada':enRecarga?'Recargando':'Reacción'}</span>`;
+      return`<div class="${cardCls}" ${onclick}><div class="acinfo"><div class="acname">⚡ ${escH(a.name)}</div><div class="acdice">${atkStr?`<span class="dc atk">${atkStr}</span>`:''}${atkStr&&dmgC?'<span class="dsep">→</span>':''}${dmgC?'<span class="dsep">Dmg:</span>'+dmgC:''}<span style="font-size:9px;color:var(--txd);margin-left:4px">${trigLabel}</span></div></div>${badge}<span class="achint">${usada||enRecarga?'—':'▶'}</span></div>`;
+    }
+    // ── Recarga ───────────────────────────────────────────────────────────────
+    const enRecarga=!!(a.recarga&&(c.recargas||{})[ai]);
+    if(enRecarga){
+      const rLabel=a.recarga===6?'6':''+a.recarga+'-6';
+      return`<div class="acard acard-recarga"><div class="acinfo"><div class="acname">🎲 ${escH(a.name)}</div><div class="acdice" style="font-size:9px;color:#6495ed">Recargando… tira 1d6 ≥ ${rLabel}</div></div><span class="rec-badge">Recarga ${rLabel}</span><span class="achint" style="color:#6495ed">⏳</span></div>`;
+    }
+    const sv=a.type==='salvacion';
+    const isConditional=!!(a.requiere_impacto&&a.accion_requerida);
+    const locked=isConditional&&!unlockedByHit.has(a.accion_requerida);
+    const unlocked=isConditional&&unlockedByHit.has(a.accion_requerida);
+    const atkB=a.attackBonus||0;const atkStr=`1d20${atkB>=0?'+'+atkB:atkB}`;
+    const atkC=sv?`<span class="dc sv">CD ${a.saveDC}·${escH(a.saveAbility)}</span>`:`<span class="dc atk">${atkStr}</span>`;
+    const dmgC=(a.damageEntries||[]).map(d=>`<span class="dc dmg">${d.dice}${d.bonus?(d.bonus>0?`+${d.bonus}`:`${d.bonus}`):''} ${escH(d.label||'')}${d.ignoresResistance?'<span class="dc res"> ⚡</span>':''}</span>`).join('');
+    const lockTip=locked?` title="Requiere que &quot;${escH(a.accion_requerida)}&quot; impacte primero" data-reqname="${escH(a.accion_requerida)}"`:'';
+    const cardCls=(locked?' acard-locked':unlocked?' acard-unlocked':'')+(a.concentracion?' acard-conc':'');
+    const nameIcon=locked?'🔒 ':unlocked?'🔓 ':'';
+    const concIcon=a.concentracion?'🔮 ':'';
+    const badgeHtml=locked
+      ?`<span class="acbadge" style="background:rgba(100,100,100,.25);color:#666">Bloq.</span>`
+      :unlocked
+        ?`<span class="acbadge" style="background:rgba(74,222,128,.12);color:var(--ju)">Desbloq.</span>`
+        :`<span class="acbadge ${sv?'sav':'atk'}">${sv?'Salvación':'Ataque'}</span>`;
+    const concBadge=a.concentracion?`<span class="acbadge" style="background:rgba(167,139,250,.1);color:#a78bfa;margin-right:2px">Conc.</span>`:'';
+    const afCur=(c.afectados||{})[ai]||0;
+    const afMax=a.max_criaturas||1;
+    const afEst=a.estado_aplicado||'Afectadas';
+    const afWidget=a.tiene_limite?`<div class="afect-ctr" onclick="event.stopPropagation()">
+      <span class="afect-lbl">🔢 ${escH(afEst)}:</span>
+      <button class="afect-mbtn" onclick="mutAfect('${c.id}',${ai},-1)" ${afCur<=0?'disabled':''}>−</button>
+      <span class="afect-val ${afCur>=afMax?'amax':afCur===0?'azero':'amid'}">${afCur}</span>
+      <button class="afect-mbtn" onclick="mutAfect('${c.id}',${ai},1)" ${afCur>=afMax?'disabled':''}>+</button>
+      <span class="afect-of">/ ${afMax}</span>
+      ${afCur>=afMax?`<span class="afect-warn">⚠️ Límite alcanzado</span>`:''}
+    </div>`:'';
+    return`<div class="acard${cardCls}"${lockTip} style="border-radius:${a.tiene_limite?'5px 5px 0 0':'5px'}" onclick="${locked?`showLockedToast(this)`:`rollAct('${c.id}',${ai})`}">
+      <div class="acinfo"><div class="acname">${nameIcon}${concIcon}${escH(a.name)}</div>
+        <div class="acdice">${locked?`<span style="font-size:9px;color:var(--txd)">Requiere: ${escH(a.accion_requerida)}</span>`:`${atkC}${atkC&&dmgC?'<span class="dsep">→</span>':''}${dmgC?'<span class="dsep">Dmg:</span>'+dmgC:''}`}</div>
+      </div>
+      ${concBadge}${badgeHtml}
+      <span class="achint">${locked?'🔒':unlocked?'🔓':'▶'}</span>
+    </div>${afWidget}`;}).join(''):'';
+  return`<div><div class="shdr">Turno actual</div>
+    <div class="curcard ${f}"${player?' onclick="nextTurn()" style="cursor:pointer" title="Clic para terminar turno"':''}>
+      <div class="curtop">
+        <div class="curinfo">
+          <div class="curname">${escH(c.name)}<span class="fpill ${f}">${fl(c.faction)}</span></div>
+          <div class="curmeta">
+            <span>Init ${c.rolledInit}</span>
+            ${!player?`<span>CA ${c.ac||'—'}</span>`:''}
+            ${!player&&(c.type||c.tamanio)?`<span style="opacity:.45">${[c.type,c.tamanio].filter(Boolean).map(escH).join(' · ')}</span>`:''}
+          </div>
+          ${!player&&((c.resistencias&&c.resistencias.length)||(c.inmunidades&&c.inmunidades.length)||(c.vulnerabilidades&&c.vulnerabilidades.length))?`<div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:4px">
+            ${(c.inmunidades||[]).map(v=>`<span style="font-size:9px;padding:1px 5px;border-radius:10px;background:rgba(167,139,250,.18);color:#c4b5fd;border:1px solid rgba(167,139,250,.3)" title="Inmunidad">🛡 ${escH(DMG_LABELS[v]||v)}</span>`).join('')}
+            ${(c.resistencias||[]).map(v=>`<span style="font-size:9px;padding:1px 5px;border-radius:10px;background:rgba(147,197,253,.14);color:#93c5fd;border:1px solid rgba(147,197,253,.25)" title="Resistencia">⚡ ${escH(DMG_LABELS[v]||v)}</span>`).join('')}
+            ${(c.vulnerabilidades||[]).map(v=>`<span style="font-size:9px;padding:1px 5px;border-radius:10px;background:rgba(252,165,165,.12);color:#fca5a5;border:1px solid rgba(252,165,165,.25)" title="Vulnerabilidad">💥 ${escH(DMG_LABELS[v]||v)}</span>`).join('')}
+          </div>`:''}
+        </div>
+        ${!player?`<div class="curhp"><span class="curhpt">${c.hp}/${c.maxHp} HP</span>
+          <div class="hpbar"><div class="hpfill" style="width:${pct}%;background:${hpC(c.hp,c.maxHp)}"></div></div>
+          <div style="display:flex;gap:3px;margin-top:2px;align-items:center;flex-wrap:wrap">
+            <button class="hbtn" onclick="mutHp('${c.id}',-stp())">−</button>
+            <input class="hpin" id="hpin-cur-${c.id}" type="number" min="1" placeholder="…" onkeydown="if(event.key==='Enter'){const v=parseInt(this.value);if(v>0){applyHpInput('${c.id}',this,true);}}" style="width:46px" />
+            <button class="hbtn" onclick="mutHp('${c.id}',stp())">+</button>
+            <button class="hbtn-dmg" onclick="applyHpInput('${c.id}',document.getElementById('hpin-cur-${c.id}'),true)">🗡️ Daño</button>
+            <button class="hbtn-heal" onclick="applyHpInput('${c.id}',document.getElementById('hpin-cur-${c.id}'),false)">💚 Curar</button>
+          </div></div>`:''}
+      </div>
+      ${!player&&c.concentracion?`<div style="padding:6px 12px;border-top:1px solid rgba(167,139,250,.25);display:flex;align-items:center;justify-content:space-between;gap:8px;background:rgba(167,139,250,.07)">
+        <span style="font-size:11px;color:#a78bfa">🔮 Concentrado en: <b>${escH(c.concentracion.nombre)}</b></span>
+        <button class="btn btn-d btn-sm" style="font-size:10px" onclick="romperConcentracion('${c.id}')">💨 Romper</button>
+      </div>`:''}
+      ${!player&&(c.auras||[]).filter(a=>a.name).length?`<div style="padding:6px 12px;border-top:1px solid rgba(167,139,250,.2);display:flex;flex-direction:column;gap:4px;background:rgba(167,139,250,.04)">
+        <div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#a78bfa;opacity:.7;margin-bottom:1px">Auras activas</div>
+        ${c.auras.filter(a=>a.name).map((aura,ai)=>`<div class="aura-card">
+          <div class="aura-card-info">
+            <div class="aura-card-name">🔮 ${escH(aura.name)}</div>
+            <div class="aura-card-meta">${aura.dice}${aura.bonus?`+${aura.bonus}`:''} ${escH(aura.label||'daño')} · ${aura.trigger==='turno_afectado'?'🔄 inicio de turno':aura.trigger==='fin_turno_afectado'?'🔄 fin de turno':'🖐 manual'}</div>
+          </div>
+          ${aura.trigger==='manual'?`<button class="aura-cfg-btn" style="background:rgba(233,69,96,.12);border-color:rgba(233,69,96,.3);color:#e94560" onclick="pendingAuras.push({ownerCid:'${c.id}',auraIdx:${ai}});processAuraQueue()">⚡ Aplicar</button>`:''}
+        </div>`).join('')}
+      </div>`:''}
+      ${player?`<div class="pw">${c.ac||c.salvaciones?`<div style="width:100%;text-align:center;padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,.06);margin-bottom:6px">${c.ac?`<span style="font-size:11px;color:var(--txd)">🛡 CA <b style="color:var(--tx)">${c.ac}</b></span>`:''}${c.salvaciones?`<div style="font-size:10px;color:var(--txd);margin-top:5px;line-height:1.8">Salvaciones:<br><span style="color:var(--tx)">FUE</span> ${c.salvaciones.fue>=0?'+':''}${c.salvaciones.fue} &nbsp;·&nbsp; <span style="color:var(--tx)">DES</span> ${c.salvaciones.des>=0?'+':''}${c.salvaciones.des} &nbsp;·&nbsp; <span style="color:var(--tx)">CON</span> ${c.salvaciones.con>=0?'+':''}${c.salvaciones.con}<br><span style="color:var(--tx)">INT</span> ${c.salvaciones.int>=0?'+':''}${c.salvaciones.int} &nbsp;·&nbsp; <span style="color:var(--tx)">SAB</span> ${c.salvaciones.sab>=0?'+':''}${c.salvaciones.sab} &nbsp;·&nbsp; <span style="color:var(--tx)">CAR</span> ${c.salvaciones.car>=0?'+':''}${c.salvaciones.car}</div>`:''}${''}` :''}
+        ${c.maxHp>0?`<div class="curhp" style="margin-bottom:6px"><span class="curhpt">${c.hp}/${c.maxHp} HP</span><div class="hpbar"><div class="hpfill" style="width:${Math.max(0,c.hp/c.maxHp*100)}%;background:${hpC(c.hp,c.maxHp)}"></div></div><div style="display:flex;gap:3px;margin-top:2px;align-items:center;flex-wrap:wrap"><button class="hbtn" onclick="mutHp('${c.id}',-stp())">−</button><input class="hpin" id="hpin-cur-${c.id}" type="number" min="1" placeholder="…" onkeydown="if(event.key==='Enter'){const v=parseInt(this.value);if(v>0){applyHpInput('${c.id}',this,true);}}" style="width:46px" /><button class="hbtn" onclick="mutHp('${c.id}',stp())">+</button><button class="hbtn-dmg" onclick="applyHpInput('${c.id}',document.getElementById('hpin-cur-${c.id}'),true)">🗡️ Daño</button><button class="hbtn-heal" onclick="applyHpInput('${c.id}',document.getElementById('hpin-cur-${c.id}'),false)">💚 Curar</button></div></div>`:''}
+        <button class="btn btn-sm" style="width:100%;font-size:11px;margin-bottom:6px;${c.inconsciente?'border-color:rgba(233,69,96,.5);color:#e94560;background:rgba(233,69,96,.1)':'border-color:rgba(255,255,255,.15);color:var(--txd)'}" onclick="toggleInconsciente('${c.id}')">${c.inconsciente?'💀 Inconsciente — clic para recuperar':'💤 Marcar inconsciente'}</button>
+        <div class="pw-icon">⏳</div><div class="pw-txt">Turno del jugador</div><div class="pw-hint">Haz clic <strong>aquí</strong> o en el item de iniciativa para terminar</div></div>`
+        :(actsH?`<div class="curacts"><div class="roll-mode-sel"><button class="rm-btn rm-normal${rollMode==='normal'?' rm-act':''}" onclick="setRollMode('normal')">Normal</button><button class="rm-btn rm-ventaja${rollMode==='ventaja'?' rm-act':''}" onclick="setRollMode('ventaja')">▲ Ventaja</button><button class="rm-btn rm-desventaja${rollMode==='desventaja'?' rm-act':''}" onclick="setRollMode('desventaja')">▼ Desventaja</button><button class="rm-btn rm-auto${rollMode==='auto'?' rm-act':''}" onclick="setRollMode('auto')">🎯 Auto</button>${rollMode==='auto'?`<label class="rm-crit-wrap"><input type="checkbox" ${autoCrit?'checked':''} onchange="toggleAutoCrit(this)"> ⚔️ Crít.</label>`:''}</div>${renderReaccionPrompt()}${actsH}</div>`:'<div class="noacts">Sin acciones definidas</div>')}
+    </div></div>`;
+}
+
+function renderIL(){
+  const alive=combatOrder.filter(c=>!isD(c)),dead=combatOrder.filter(c=>isD(c));
+  const rmc=c=>{
+    const isCur=combatOrder.indexOf(c)===turnIndex,isTurn=c.hasTurned&&!isCur,isDead=isD(c),player=isP(c),f=fc(c.faction);
+    const pct=!player?Math.max(0,c.hp/c.maxHp*100):0;
+    return`<div id="mc-${c.id}" class="mc ${f} ${isCur?'mc-act':''} ${isTurn?'mc-turn':''} ${isDead?'mc-dead':''}"${isCur&&player?' onclick="nextTurn()" style="cursor:pointer" title="Clic para terminar turno"':''}>
+      <span class="mc-i">${c.rolledInit}</span>
+      <span class="mc-n" ${c.concentracion?`title="Concentrado en: ${escH(c.concentracion.nombre)}"`:''}>
+        ${c.concentracion?'🔮 ':''}${c.inconsciente?'💤 ':''}${escH(c.name)}
+        ${!player&&(c.type||c.tamanio)?`<span style="font-size:9px;color:var(--txd);font-weight:400;display:block;margin-top:1px">${[c.type,c.tamanio].filter(Boolean).map(escH).join(' · ')}</span>`:''}
+      </span>
+      ${!player?`<div class="mc-stats">
+        <span class="mc-ca">🛡${c.ac||'?'}</span>
+        <div class="mc-bar"><div class="mc-fill" style="width:${pct}%;background:${hpC(c.hp,c.maxHp)}"></div></div>
+        <span class="mc-ht">${c.hp}/${c.maxHp}</span>
+        ${isDead?`<button class="btn-res" onclick="openResucitar('${c.id}')">💀→❤️</button>`:`<div class="mc-ctrl" style="display:flex;gap:2px;align-items:center"><button class="hbtn" onclick="mutHp('${c.id}',-stp())">−</button><input class="hpin" id="hpin-${c.id}" type="number" min="1" placeholder="…" onkeydown="if(event.key==='Enter'){const v=parseInt(this.value);if(v>0){applyHpInput('${c.id}',this,true);}}" /><button class="hbtn" onclick="mutHp('${c.id}',stp())">+</button><button class="hbtn-dmg" onclick="applyHpInput('${c.id}',document.getElementById('hpin-${c.id}'),true)">🗡️</button><button class="hbtn-heal" onclick="applyHpInput('${c.id}',document.getElementById('hpin-${c.id}'),false)">💚</button></div>`}
+      </div>`:`<div class="mc-ctrl" style="display:flex;gap:2px;align-items:center;flex-shrink:0">${c.maxHp>0?`<input class="hpin" id="hpin-${c.id}" type="number" min="1" placeholder="HP" title="${c.hp}/${c.maxHp} HP" onkeydown="if(event.key==='Enter'){const v=parseInt(this.value);if(v>0){applyHpInput('${c.id}',this,false);}}" /><button class="hbtn-heal" style="font-size:9px;padding:0 3px" onclick="applyHpInput('${c.id}',document.getElementById('hpin-${c.id}'),false)">💚</button><button class="hbtn-dmg" style="font-size:9px;padding:0 3px" onclick="applyHpInput('${c.id}',document.getElementById('hpin-${c.id}'),true)">🗡️</button>`:''}
+        <button class="hbtn" style="${c.inconsciente?'border-color:rgba(233,69,96,.5);color:#e94560;background:rgba(233,69,96,.1);width:auto;padding:0 4px;font-size:9px':'width:auto;padding:0 4px;font-size:9px'}" onclick="toggleInconsciente('${c.id}')" title="${c.inconsciente?'Inconsciente — clic para recuperar':'Marcar inconsciente'}">${c.inconsciente?'💀':'💤'}</button>
+      </div>`}
+      ${isTurn?'<span class="mc-ck">✓</span>':''}
+    </div>`;};
+  let h=alive.map(rmc).join('');
+  if(dead.length)h+=`<div class="deadsep">— derrotados —</div>`+dead.map(rmc).join('');
+  return h||'<div class="empty" style="padding:10px">Sin combatientes</div>';
+}
+
+// LOG
+function selLog(idx){selectedLogIdx=selectedLogIdx===idx?-1:idx;renderLog();}
+function renderLog(){
+  const p=document.getElementById('logpanel');if(!p)return;
+  const statsEl=document.getElementById('log-stats');
+  if(!combatLog.length){p.innerHTML='<div class="log-empty">Sin tiradas aún</div>';if(statsEl)statsEl.style.display='none';return;}
+
+  // ── Estadísticas de tiradas d20 de ataque ─────────────────────────────────
+  let totalAtk=0,totalCrit=0;
+  combatLog.forEach(e=>{
+    if(e.multiataques){
+      e.multiataques.forEach(a=>{if(a.atk?.roll!=null){totalAtk+=a.atk.dice?.length||1;if(a.atk.critical)totalCrit++;}});
+    } else if(e.atk?.roll!=null){
+      totalAtk+=e.atk.dice?.length||1;if(e.atk.critical)totalCrit++;
+    }
+  });
+  if(statsEl&&totalAtk>0){
+    const pct=(totalCrit/totalAtk*100).toFixed(1);
+    const esperado=(totalAtk*0.05).toFixed(1);
+    statsEl.style.display='flex';
+    statsEl.innerHTML=`<span>Tiradas d20: <span class="ls-val">${totalAtk}</span></span>`
+      +`<span>Críticos: <span class="ls-crit">${totalCrit}</span> / <span class="ls-val">${pct}%</span></span>`
+      +`<span style="opacity:.55">(esperado: ~${esperado} · 5%)</span>`;
+  } else if(statsEl){statsEl.style.display='none';}
+
+  let html='',lastR=-1;
+  combatLog.forEach((e,idx)=>{
+    if(e.round!==lastR){html+=`<div class="log-rnd-sep">Ronda ${e.round}</div>`;lastR=e.round;}
+    if(e.afect){
+      const{estado,next,max,delta}=e.afect;
+      const add=delta>0;
+      const acol=add?'var(--en)':'var(--ju)';
+      const icon=add?'➕':'➖';
+      const valCls=next>=max?'amax':next===0?'azero':'amid';
+      html+=`<div class="lentry ${fc(e.faction)} ${selectedLogIdx===idx?'lsel':''}" onclick="selLog(${idx})">
+        <div class="lhead"><span class="lcname">${escH(e.cname)}</span><span class="laname" style="color:#5bc8f4">→ ${escH(e.aname)} (${escH(estado)})</span></div>
+        <div class="lrow" style="color:${acol}">${icon} <span class="afect-val ${valCls}" style="display:inline">${next}</span> / ${max} ${escH(estado.toLowerCase())}${next===1?'':'s'}${next>=max?' <span style="color:var(--en);font-size:9px">⚠️ Límite</span>':next===0?' <span style="color:var(--txd);font-size:9px">Sin afectadas</span>':''}</div>
+      </div>`;
+      return;
+    }
+    if(e.initRoll){
+      html+=`<div class="lentry ${fc(e.faction)} ${selectedLogIdx===idx?'lsel':''}" onclick="selLog(${idx})"><div class="lhead"><span class="lcname">${escH(e.cname)}</span><span class="laname">→ Iniciativa</span></div>
+        <div class="lrow">1d20 [${e.initRoll.d20}]+${e.initRoll.mod} = <span class="lv">${e.initRoll.total}</span></div></div>`;
+      return;
+    }
+    if(e.conSave){
+      const{roll,mod,total,cd,passed,conjuro}=e.conSave;
+      const bonStr=mod>=0?`+${mod}`:String(mod);
+      html+=`<div class="lentry ${fc(e.faction)} ${selectedLogIdx===idx?'lsel':''}" style="border-left-color:${passed?'rgba(74,222,128,.5)':'rgba(233,69,96,.5)'}" onclick="selLog(${idx})">
+        <div class="lhead"><span class="lcname">${escH(e.cname)}</span><span class="laname">→ Salvación CON</span></div>
+        <div class="lrow lsv">1d20 [${roll}]${bonStr} = <span class="lv">${total}</span> vs CD${cd} → <span style="color:${passed?'var(--ju)':'var(--en)'};font-weight:700">${passed?'✅ Supera':'💨 Falla'}</span></div>
+        <div class="lrow" style="color:${passed?'var(--ju)':'var(--en)'};">${passed?`Mantiene concentración en "${escH(conjuro)}"`:`Pierde concentración en "${escH(conjuro)}"`}</div>
+      </div>`;
+      return;
+    }
+    if(e.concRota){
+      html+=`<div class="lentry ${fc(e.faction)} ${selectedLogIdx===idx?'lsel':''}" style="border-left-color:rgba(167,139,250,.5)" onclick="selLog(${idx})">
+        <div class="lhead"><span class="lcname">${escH(e.cname)}</span><span class="laname" style="color:#a78bfa">→ 💨 Concentración rota</span></div>
+        <div class="lrow" style="color:var(--txd)">Pierde concentración en "<b style="color:var(--tx)">${escH(e.concRota.conjuro)}</b>"</div>
+      </div>`;
+      return;
+    }
+    if(e.reaccionUsada){
+      const{atk,dmg,totalDmg}=e.reaccionUsada;
+      const isCrit=atk?.critical;
+      html+=`<div class="lentry ${fc(e.faction)} ${selectedLogIdx===idx?'lsel':''} ${isCrit?'crit-entry':''}" style="border-left-color:rgba(251,146,60,.5)" onclick="selLog(${idx})">
+        <div class="lhead"><span class="lcname">${escH(e.cname)}</span><span class="laname" style="color:#fb923c">→ ⚡ Reacción: ${escH(e.aname)}</span>${fmtAdvBadge(atk?.advMode)}${isCrit?'<span class="lcrit" style="animation:critpop .4s ease;margin-left:auto">⚔️ CRÍTICO</span>':''}</div>`;
+      if(atk){
+        const b=fmtB(atk.bonus||0);
+        if(isCrit){html+=`<div class="latk-row">d20 ${fmtD20(atk)}${b} <span class="lcrit" style="margin-left:auto">⚔️ crítico — impacto automático</span></div>`;}
+        else{html+=`<div class="latk-row">d20 ${fmtD20(atk)}${b} = <span class="lv" style="color:rgba(255,255,255,.8)">${atk.total}</span></div>`;}
+      }
+      html+=fmtDmgBlock(dmg);
+      if(totalDmg)html+=`<div class="lfoot"><span class="lfoot-total">Daño total: ${totalDmg}</span><span></span></div>`;
+      html+='</div>';
+      return;
+    }
+    if(e.auraDmg){
+      const{rolls,bonus,total,label,target,killed}=e.auraDmg;
+      const b=bonus?(bonus>0?`+${bonus}`:`${bonus}`):'';
+      html+=`<div class="lentry ${fc(e.faction)} ${selectedLogIdx===idx?'lsel':''}" style="border-left-color:rgba(167,139,250,.5)" onclick="selLog(${idx})">
+        <div class="lhead"><span class="lcname">${escH(e.cname)}</span><span class="laname" style="color:#a78bfa">→ 🔮 ${escH(e.aname)}</span></div>
+        <div class="lrow" style="color:var(--txd);font-size:10px">→ <b style="color:var(--tx)">${escH(target)}</b></div>
+        <div class="lrow ldmg">${escH(label)}: [${rolls.join(',')}]${b} = <span class="lv">${total}</span></div>
+        ${killed?`<div class="lrow" style="color:var(--en);font-weight:700">💀 ${escH(killed)} eliminado</div>`:''}
+      </div>`;
+      return;
+    }
+    if(e.quickHp){
+      const{isDmg,amount,actual,hpAfter,maxHp,killed,dmgType,modifier,statusChange}=e.quickHp;
+      if(statusChange){
+        const isKo=statusChange==='inconsciente';
+        html+=`<div class="lentry ${fc(e.faction)} ${selectedLogIdx===idx?'lsel':''}" style="border-left-color:${isKo?'rgba(233,69,96,.5)':'rgba(74,222,128,.45)'}" onclick="selLog(${idx})">
+          <div class="lhead"><span class="lcname">${escH(e.cname)}</span><span class="laname" style="color:${isKo?'#e94560':'#4ade80'}">${isKo?'💤 Inconsciente':'✨ Recuperado'}</span></div>
+        </div>`;
+        return;
+      }
+      const color=isDmg?'rgba(233,69,96,.5)':'rgba(74,222,128,.45)';
+      const icon=isDmg?'🗡️':'💚';
+      const verb=isDmg?'recibe':'recupera';
+      const typeLabel=dmgType?` <span style="opacity:.6;font-size:9px">${escH(dmgType)}</span>`:'';
+      const diffLabel=actual!==amount?` → <b>${actual}</b>`:'' ;
+      let modLine='';
+      if(modifier==='inmune')modLine=`<div class="lrow" style="color:#a78bfa;font-size:10px">🛡 Inmune — daño bloqueado</div>`;
+      else if(modifier==='resistencia')modLine=`<div class="lrow" style="color:#93c5fd;font-size:10px">⚡ Resistencia: ${amount}${diffLabel} daño</div>`;
+      else if(modifier==='vulnerabilidad')modLine=`<div class="lrow" style="color:#fca5a5;font-size:10px">💥 Vulnerabilidad: ${amount}${diffLabel} daño</div>`;
+      html+=`<div class="lentry ${fc(e.faction)} ${selectedLogIdx===idx?'lsel':''}" style="border-left-color:${color}" onclick="selLog(${idx})">
+        <div class="lhead"><span class="lcname">${escH(e.cname)}</span><span class="laname" style="color:${isDmg?'#e94560':'#4ade80'}">${icon} ${verb} ${amount}${isDmg?' de daño':' HP'}${typeLabel}</span></div>
+        ${modLine}
+        <div class="lrow" style="font-size:10px;color:var(--txd)">HP: <span style="color:var(--tx);font-weight:600">${hpAfter}/${maxHp}</span></div>
+        ${killed?`<div class="lrow" style="color:var(--en);font-weight:700">💀 ${escH(killed)} eliminado</div>`:''}
+      </div>`;
+      return;
+    }
+    if(e.recargaRoll){
+      const{roll,min,recharged}=e.recargaRoll;
+      const rLabel=min===6?'6':`${min}-6`;
+      html+=`<div class="lentry ${fc(e.faction)} ${selectedLogIdx===idx?'lsel':''}" style="border-left-color:${recharged?'rgba(74,222,128,.5)':'rgba(100,149,237,.4)'}" onclick="selLog(${idx})">
+        <div class="lhead"><span class="lcname">${escH(e.cname)}</span><span class="laname" style="color:${recharged?'#4ade80':'#6495ed'}">→ 🎲 Recarga: ${escH(e.aname)}</span></div>
+        <div class="lrow">1d6 [<span class="${recharged?'lv':''}">${roll}</span>] — necesita ≥${rLabel} — ${recharged?'<span style="color:#4ade80;font-weight:700">✓ ¡RECARGADA!</span>':'<span style="color:#6495ed">⏳ Sin recargar</span>'}</div>
+      </div>`;
+      return;
+    }
+    if(e.resucitado){
+      html+=`<div class="lentry ${fc(e.faction)} ${selectedLogIdx===idx?'lsel':''}" style="border-left-color:rgba(74,222,128,.6)" onclick="selLog(${idx})">
+        <div class="lhead"><span class="lcname" style="color:var(--ju)">${escH(e.cname)}</span><span class="laname" style="color:var(--ju)">→ ✨ Resucitado</span></div>
+        <div class="lrow" style="color:var(--ju)">Vuelve con <b>${e.resucitado.hp}</b> PG</div>
+      </div>`;
+      return;
+    }
+    // ── Multiataque ───────────────────────────────────────────────────────
+    if(e.multiataques){
+      const hasCrit=e.multiataques.some(a=>a.atk?.critical);
+      const anyHit=e.multiataques.some(a=>a.hit);
+      const unlockedNote=e.unlockedBy?`<span style="font-size:9px;color:#a78bfa;margin-left:auto">(desbloqueado por ${escH(e.unlockedBy)} ✓)</span>`:'';
+      const comboLbl=e.multiComboLabel?`<span class="lbadge lbadge-n" style="color:rgba(201,168,76,.7)">${escH(e.multiComboLabel)}</span>`:'';
+      html+=`<div class="lentry ${fc(e.faction)} ${selectedLogIdx===idx?'lsel':''} ${hasCrit?'crit-entry':''}" onclick="selLog(${idx})">
+        <div class="lhead"><span class="lcname">${escH(e.cname)}</span><span class="laname">→ ${escH(e.aname)}</span><span class="lbadge lbadge-n">×${e.multiataques.length}</span>${fmtAdvBadge(e.advMode)}${comboLbl}${hasCrit?'<span class="lcrit" style="animation:critpop .4s ease;margin-left:auto">⚔️ CRÍTICO</span>':''}${unlockedNote}</div>`;
+      e.multiataques.forEach((slot,ki)=>{
+        const lbl=slot.slotLabel?escH(slot.slotLabel):`Atk ${ki+1}`;
+        const b=fmtB(slot.atk.bonus||0);
+        const tgt=slot.target;
+        if(slot.skipped){
+          html+=`<div class="latk-row"><span class="latk-lbl">${lbl}</span><span style="color:var(--txd);font-size:10px">— Sin objetivo</span></div>`;
+        } else if(slot.atk.autoHit){
+          const autoLabel=slot.atk.critical
+            ?`<span class="lcrit" style="margin-left:auto">⚔️ Crítico automático</span>`
+            :`<span style="color:#fb923c;font-size:9px;margin-left:auto">🎯 Auto</span>`;
+          const caStr=tgt?` <span style="color:var(--txd);font-size:9px">→ ${escH(tgt.name)}</span>`:'';
+          html+=`<div class="latk-row"><span class="latk-lbl">${lbl}</span>${caStr}${autoLabel}</div>`;
+        } else if(slot.atk.critical){
+          html+=`<div class="latk-row"><span class="latk-lbl">${lbl}</span>d20 ${fmtD20(slot.atk)}${b}${tgt?` → <b style="color:var(--tx)">${escH(tgt.name)}</b>`:''} <span class="lcrit" style="margin-left:auto">⚔️ CRÍTICO</span></div>`;
+        }else{
+          const hitStr=slot.hit!=null?` <span style="color:${slot.hit?'var(--ju)':'var(--en)'};">${slot.hit?'✓ Impacto':'✗ Fallo'}</span>`:'';
+          const caStr=tgt?` <span style="color:var(--txd);font-size:9px">→ ${escH(tgt.name)} CA${tgt.ac}</span>`:'';
+          html+=`<div class="latk-row"><span class="latk-lbl">${lbl}</span>d20 ${fmtD20(slot.atk)}${b} = <span class="lv" style="color:rgba(255,255,255,.8)">${slot.atk.total}</span>${caStr}${hitStr}</div>`;
+        }
+        if(slot.hit)html+=fmtDmgBlock(slot.dmg);
+      });
+      if(anyHit&&e.totalDmg!=null||e.killed){
+        const totalH=anyHit&&e.totalDmg!=null?`<span class="lfoot-total">Daño total: ${e.totalDmg}</span>`:`<span></span>`;
+        const killH=e.killed?`<span class="lfoot-kill">💀 ${escH(e.killed)} eliminado</span>`:`<span></span>`;
+        html+=`<div class="lfoot">${totalH}${killH}</div>`;
+      }
+      html+=fmtDefMod(e.defMod);
+      html+='</div>';
+      return;
+    }
+    // ── Ataque simple ─────────────────────────────────────────────────────
+    const isCrit=e.atk?.critical;
+    const unlockedNote=e.unlockedBy?`<span style="font-size:9px;color:#a78bfa;margin-left:auto">(desbloqueado por ${escH(e.unlockedBy)} ✓)</span>`:'';
+    html+=`<div class="lentry ${fc(e.faction)} ${selectedLogIdx===idx?'lsel':''} ${isCrit?'crit-entry':''}" onclick="selLog(${idx})">
+      <div class="lhead"><span class="lcname">${escH(e.cname)}</span><span class="laname">→ ${escH(e.aname)}</span>${fmtAdvBadge(e.advMode)}${isCrit?'<span class="lcrit" style="animation:critpop .4s ease;margin-left:auto">⚔️ CRÍTICO</span>':''}${unlockedNote}</div>`;
+    if(e.target){
+      html+=`<div class="ltgt">→ <b>${escH(e.target.name)}</b><span style="opacity:.45">(CA ${e.target.ac})</span></div>`;
+    }
+    if(e.atk){
+      const b=fmtB(e.atk.bonus||0);
+      if(e.atk.autoHit){
+        const critLabel=isCrit?`<span class="lcrit" style="margin-left:auto">⚔️ Crítico automático</span>`:`<span style="color:#fb923c;font-size:9px;margin-left:auto">🎯 Impacto automático</span>`;
+        html+=`<div class="latk-row">${critLabel}</div>`;
+      } else if(isCrit){
+        html+=`<div class="latk-row">d20 ${fmtD20(e.atk)}${b} <span class="lcrit" style="margin-left:auto">⚔️ crítico — impacto automático</span></div>`;
+      } else {
+        const hitStr=e.hit!=null?` <span style="color:${e.hit?'var(--ju)':'var(--en)'};">${e.hit?'✓ Impacto':'✗ Fallo'}</span>`:'';
+        html+=`<div class="latk-row">d20 ${fmtD20(e.atk)}${b} = <span class="lv" style="color:rgba(255,255,255,.8)">${e.atk.total}</span>${hitStr}</div>`;
+      }
+    }
+    if(e.save){
+      html+=`<div class="lrow lsv" style="margin-top:3px">Salvación: <span class="lv">CD ${e.save.dc}</span> · ${escH(e.save.ability)}</div>`;
+      if(e.areaTargets&&e.areaTargets.length)html+=`<div class="lrow" style="color:var(--txd)">→ ${e.areaTargets.map(n=>escH(n)).join(', ')}</div>`;
+    }
+    html+=fmtDmgBlock(e.dmg);
+    html+=fmtDefMod(e.defMod);
+    if(e.killed)html+=`<div class="lfoot"><span></span><span class="lfoot-kill">💀 ${escH(e.killed)} eliminado</span></div>`;
+    html+='</div>';
+  });
+  p.innerHTML=html;
+  if(selectedLogIdx===-1)p.scrollTop=p.scrollHeight;
+}
+function clearLog(){combatLog=[];selectedLogIdx=-1;renderLog();}
+function mutAfect(cid,ai,delta){
+  const c=creatures.find(x=>x.id===cid);if(!c)return;
+  const a=c.actions[ai];if(!a||!a.tiene_limite)return;
+  if(!c.afectados)c.afectados={};
+  const cur=(c.afectados[ai]||0);
+  const max=a.max_criaturas||1;
+  const next=Math.max(0,Math.min(max,cur+delta));
+  if(next===cur)return;
+  c.afectados[ai]=next;
+  combatLog.push({cname:c.name,faction:c.faction,aname:a.name,round,
+    afect:{estado:a.estado_aplicado||'Afectada',prev:cur,next,max,delta}});
+  renderC();renderLog();
+}
+
+// ROLL
+function rollDmgEntries(entries,critical=false){
+  return(entries||[]).map(dm=>{
+    const pd=parseDice(dm.dice)||{count:1,sides:6};
+    const cnt=critical?pd.count*2:pd.count;
+    const rolls=rollN(cnt,pd.sides);
+    return{label:dm.label,rolls,bonus:dm.bonus||0,total:rolls.reduce((s,v)=>s+v,0)+(dm.bonus||0),res:dm.ignoresResistance,critical};
+  });
+}
+
+function rollAct(cid,ai){
+  mbCancel();
+  const c=creatures.find(x=>x.id===cid);if(!c)return;
+  const a=c.actions[ai];
+  // ── Concentración: confirmar cambio si ya hay activa ──────────────────
+  if(a.concentracion&&c.concentracion&&c.concentracion.nombre!==a.name){
+    concentracionPendiente={cid,ai};
+    document.getElementById('cov-msg').innerHTML=`<b>${escH(c.name)}</b> ya está concentrado en <b>"${escH(c.concentracion.nombre)}"</b>.<br>¿Cancelar <b>"${escH(c.concentracion.nombre)}"</b> y concentrarse en <b>"${escH(a.name)}"</b>?`;
+    document.getElementById('cov').classList.add('show');
+    return;
+  }
+  if(a.type==='ataque'){
+    pendingAction={cid,ai};
+    // Build sorted target list: enemies of the attacker first
+    const alive=creatures.filter(t=>t.id!==cid&&!isD(t));
+    const isEnemigo=c.faction==='enemigo';
+    const grpA=alive.filter(t=>isEnemigo?(t.faction!=='enemigo'):(t.faction==='enemigo'));
+    const grpB=alive.filter(t=>isEnemigo?(t.faction==='enemigo'):(t.faction!=='enemigo'));
+    const atkEsc=isP(c)?0:(ESCALA_TAMANO[c.tamanio||'Mediano']||3);
+    const sizeBadge=t=>{if(isP(c)||isP(t))return'';const d=atkEsc-(ESCALA_TAMANO[t.tamanio||'Mediano']||3);return d===1?'<span title="Ventaja por tamaño" style="font-size:11px;flex-shrink:0;color:#4ade80">⬆️</span>':d===-1?'<span title="Desventaja por tamaño" style="font-size:11px;flex-shrink:0;color:#e94560">⬇️</span>':'';};
+    const trow=t=>`<div class="trow ${fc(t.faction)}" onclick="confirmTarget('${t.id}')">
+        ${sizeBadge(t)}
+        <span class="trow-n">${escH(t.name)}</span>
+        ${!isP(t)?`<span class="trow-ac">🛡${t.ac||'?'}</span><span class="trow-hp">${t.hp}/${t.maxHp} HP</span>`:'<span class="trow-hp" style="color:var(--ju)">Jugador</span>'}
+      </div>`;
+    const sep=(label,col)=>`<div style="font-size:9px;text-transform:uppercase;letter-spacing:1.5px;color:${col};padding:5px 11px 2px;opacity:.7">${label}</div>`;
+    let tbody='';
+    if(!alive.length){tbody='<div class="log-empty">Sin objetivos disponibles</div>';}
+    else if(!grpA.length||!grpB.length){tbody=alive.map(trow).join('');}
+    else{tbody=sep('— Objetivos principales —',isEnemigo?'var(--al)':'var(--en)')+grpA.map(trow).join('')+sep('— Otros —','var(--txd)')+grpB.map(trow).join('');}
+    document.getElementById('ttit').textContent=`${escH(a.name)} — Elegir objetivo`;
+    document.getElementById('tbody').innerHTML=tbody;
+    document.getElementById('tov').classList.add('show');
+    return;
+  }
+  // Salvacion: mostrar selector de área
+  pendingAction={cid,ai};
+  const saveTargets=creatures.filter(t=>t.id!==cid&&!isD(t));
+  document.getElementById('ttit').textContent=`${escH(a.name)} — Área de efecto`;
+  document.getElementById('tbody').innerHTML=saveTargets.length
+    ?saveTargets.map(t=>`<div class="trow ${fc(t.faction)}" onclick="this.querySelector('.save-chk').click()">
+        <input type="checkbox" class="save-chk" data-id="${t.id}" onclick="event.stopPropagation()" style="flex-shrink:0;accent-color:var(--ju);cursor:pointer">
+        <span class="trow-n">${escH(t.name)}</span>
+        ${!isP(t)?`<span class="trow-ac">🛡${t.ac||'?'}</span><span class="trow-hp">${t.hp}/${t.maxHp} HP</span>`:'<span class="trow-hp" style="color:var(--ju)">Jugador</span>'}
+      </div>`).join('')
+    :'<div class="log-empty">Sin objetivos disponibles</div>';
+  document.getElementById('tov-confirm').style.display='';
+  document.getElementById('tov').classList.add('show');
+}
+
+function confirmTarget(targetId){
+  document.getElementById('tov').classList.remove('show');
+  if(!pendingAction)return;
+  const{cid,ai}=pendingAction;pendingAction=null;
+  const c=creatures.find(x=>x.id===cid);if(!c)return;
+  const a=c.actions[ai];
+  const target=creatures.find(x=>x.id===targetId);
+
+  // ── Auto-detección ventaja/desventaja por tamaño ─────────────────────────
+  if(!rollModeManual&&rollMode!=='auto'){
+    if(target&&!isP(c)&&!isP(target)){
+      const at=ESCALA_TAMANO[c.tamanio||'Mediano']||3;
+      const df=ESCALA_TAMANO[target.tamanio||'Mediano']||3;
+      if(at-df===1)rollMode='ventaja'; else rollMode='normal';
+    }else{rollMode='normal';}
+  }
+  rollModeManual=false;
+
+  // ── Multiataque legado (multiataque:true, num_ataques) → secuencial ───────
+  if(a.multiataque&&a.num_ataques>1&&a.type==='ataque'){
+    const numAtk=Math.min(10,a.num_ataques);
+    const combo=Array.from({length:numAtk},()=>({accion:a.name,veces:1}));
+    startMultiSeq(cid,ai,combo,`${a.name} ×${numAtk}`);
+    return;
+  }
+
+  // ── Ataque simple ────────────────────────────────────────────────────────
+  const mode=rollMode;const isAuto=mode==='auto';const isCritAuto=isAuto&&autoCrit;
+  rollMode='normal'; rollModeManual=false; autoCrit=false;
+  let roll,dice,critical,total,hit;
+  const bonus=a.attackBonus||0;
+  const targetAC=(!target||isP(target))?0:(target.ac||0);
+  if(isAuto){
+    roll=null;dice=null;critical=isCritAuto;total=null;hit=true;
+  }else{
+    const r=rollD20adv(mode);roll=r.roll;dice=r.dice;
+    critical=roll===20;total=roll+bonus;
+    hit=critical||!target||isP(target)||total>=targetAC;
+  }
+  const entry={cname:c.name,faction:c.faction,aname:a.name,round,
+    target:target?{name:target.name,ac:targetAC}:null,
+    atk:{roll,dice,bonus,total,critical,advMode:mode,autoHit:isAuto},hit,advMode:mode};
+  if(hit&&target&&!isP(target)){
+    entry.dmg=rollDmgEntries(a.damageEntries,critical);
+    const tgt=creatures.find(x=>x.id===targetId);
+    if(tgt){const{finalDmg,defMod}=calcFinalDmg(tgt,entry.dmg);tgt.hp=Math.max(0,tgt.hp-finalDmg);entry.defMod=defMod;if(tgt.hp<=0)entry.killed=tgt.name;}
+  } else if(!hit){entry.dmg=[];}
+  if(hit)unlockedByHit.add(a.name);
+  if(a.concentracion){c.concentracion={nombre:a.name};entry.concActivada=a.name;}
+  if(a.requiere_impacto&&a.accion_requerida)entry.unlockedBy=a.accion_requerida;
+  if(a.recarga)c.recargas[ai]=true;
+  combatLog.push(entry);
+  // ── Comprobar reacciones del objetivo ────────────────────────────────────
+  if(target&&!isP(target)){
+    const tgt=creatures.find(x=>x.id===targetId);
+    if(tgt&&!tgt.reaccion_usada){
+      const rai=(tgt.actions||[]).findIndex((x,i)=>
+        x.type==='reaccion'&&!(tgt.recargas||{})[i]&&
+        (x.trigger==='atacado'||(x.trigger==='golpeado'&&hit))
+      );
+      if(rai>=0)pendingReaction={cid:targetId,ai:rai};
+    }
+  }
+  advTurn();renderSB();renderC();renderLog();checkVictory();
+}
+
+function closeTM(){document.getElementById('tov').classList.remove('show');document.getElementById('tov-confirm').style.display='none';document.getElementById('tov-skip').style.display='none';mbCancel();pendingAction=null;multiAtkSeq=null;if(!rollModeManual){rollMode='normal';autoCrit=false;}renderC();}
+
+function confirmSaveArea(){
+  document.getElementById('tov').classList.remove('show');
+  document.getElementById('tov-confirm').style.display='none';
+  if(!pendingAction)return;
+  const{cid,ai}=pendingAction;pendingAction=null;
+  const c=creatures.find(x=>x.id===cid);if(!c)return;
+  const a=c.actions[ai];
+  const selectedIds=[...document.querySelectorAll('#tbody .save-chk:checked')].map(el=>el.dataset.id);
+  const targets=selectedIds.map(id=>creatures.find(x=>x.id===id)).filter(t=>t&&!isP(t));
+  const entry={cname:c.name,faction:c.faction,aname:a.name,round};
+  entry.save={dc:a.saveDC,ability:a.saveAbility};
+  entry.dmg=rollDmgEntries(a.damageEntries);
+  if(targets.length){
+    entry.areaTargets=targets.map(t=>t.name);
+    const killed=[];
+    targets.forEach(t=>{const{finalDmg}=calcFinalDmg(t,entry.dmg);t.hp=Math.max(0,t.hp-finalDmg);if(t.hp<=0)killed.push(t.name);});
+    if(killed.length)entry.killed=killed.join(', ');
+  }
+  if(a.concentracion){c.concentracion={nombre:a.name};entry.concActivada=a.name;}
+  if(a.recarga)c.recargas[ai]=true;
+  combatLog.push(entry);
+  advTurn();renderSB();renderC();renderLog();checkVictory();
+}
+
+function mutHp(id,delta){
+  const c=creatures.find(x=>x.id===id);if(!c)return;
+  const oldHp=c.hp;
+  c.hp=Math.max(0,Math.min(c.maxHp,c.hp+delta));
+  const actualDmg=oldHp-c.hp;
+  if(actualDmg>0&&c.concentracion)showConSavePrompt(id,actualDmg);
+  renderSB();renderC();
+  if(delta<0&&c.hp<=0)checkVictory();
+}
+
+function applyHpInput(id,inputEl,isDmg){
+  const c=creatures.find(x=>x.id===id);if(!c)return;
+  const val=parseInt(inputEl.value);
+  if(!val||val<=0)return;
+  if(isDmg){
+    // Open damage type modal
+    dtovState={cid:id,sourceInput:inputEl};
+    document.getElementById('dto-amt').value=val;
+    document.getElementById('dto-type').value='contundente';
+    updateDtoPreview();
+    document.getElementById('dtov').classList.add('show');
+  } else {
+    inputEl.value='';
+    _applyHeal(id,val);
+  }
+}
+
+function _applyHeal(id,val){
+  const c=creatures.find(x=>x.id===id);if(!c)return;
+  const oldHp=c.hp;
+  c.hp=Math.min(c.maxHp,c.hp+val);
+  const diff=c.hp-oldHp;
+  combatLog.push({cname:c.name,faction:c.faction,quickHp:{isDmg:false,amount:val,actual:diff,hpAfter:c.hp,maxHp:c.maxHp,killed:null,dmgType:null,modifier:null}});
+  renderSB();renderC();renderLog();
+}
+
+function updateDtoPreview(){
+  if(!dtovState)return;
+  const c=creatures.find(x=>x.id===dtovState.cid);
+  const amt=parseInt(document.getElementById('dto-amt').value)||0;
+  const type=document.getElementById('dto-type').value;
+  const label=DMG_LABELS[type]||type;
+  const prev=document.getElementById('dto-preview');
+  if(!c||!amt){prev.textContent='—';return;}
+  const {modifier,finalDmg,text}=calcDmgModifier(c,amt,type);
+  prev.innerHTML=text;
+}
+
+function calcDmgModifier(c,amt,type){
+  const res=c.resistencias||[];
+  const imm=c.inmunidades||[];
+  const vul=c.vulnerabilidades||[];
+  const label=DMG_LABELS[type]||type;
+  if(imm.includes(type)){
+    return{modifier:'inmune',finalDmg:0,text:`<span style="color:#a78bfa">🛡 ${escH(c.name)} es <b>inmune</b> a ${escH(label)}: ${amt} → <b>0</b> daño</span>`};
+  }
+  if(res.includes(type)){
+    const fd=Math.floor(amt/2);
+    return{modifier:'resistencia',finalDmg:fd,text:`<span style="color:#93c5fd">⚡ ${escH(c.name)} <b>resiste</b> ${escH(label)}: ${amt} → <b>${fd}</b> daño</span>`};
+  }
+  if(vul.includes(type)){
+    const fd=amt*2;
+    return{modifier:'vulnerabilidad',finalDmg:fd,text:`<span style="color:#fca5a5">💥 ${escH(c.name)} es <b>vulnerable</b> a ${escH(label)}: ${amt} → <b>${fd}</b> daño</span>`};
+  }
+  return{modifier:null,finalDmg:amt,text:`<span style="color:var(--txd)">${escH(c.name)} recibe <b>${amt}</b> de daño ${escH(label)}</span>`};
+}
+
+// Aplica resistencias/inmunidades/vulnerabilidades a un array de entradas de daño rodadas.
+// Devuelve {finalDmg, defMod} donde defMod es el modificador más severo encontrado.
+function calcFinalDmg(target, dmgEntries){
+  let total=0; let defMod=null;
+  (dmgEntries||[]).forEach(entry=>{
+    const type=entry.label||'';
+    if(!entry.res&&type){
+      const{modifier,finalDmg}=calcDmgModifier(target,entry.total,type);
+      total+=finalDmg;
+      if(modifier==='inmune')defMod='inmune';
+      else if(modifier&&defMod!=='inmune')defMod=modifier;
+    }else{total+=entry.total;}
+  });
+  return{finalDmg:total,defMod};
+}
+
+function confirmDmgType(){
+  if(!dtovState)return;
+  const {cid,sourceInput}=dtovState;
+  const c=creatures.find(x=>x.id===cid);if(!c)return;
+  const amt=parseInt(document.getElementById('dto-amt').value)||0;
+  const type=document.getElementById('dto-type').value;
+  if(!amt||amt<=0){closeDTOV();return;}
+  dtovState=null;
+  document.getElementById('dtov').classList.remove('show');
+  if(sourceInput)sourceInput.value='';
+  const {modifier,finalDmg}=calcDmgModifier(c,amt,type);
+  const oldHp=c.hp;
+  c.hp=Math.max(0,c.hp-finalDmg);
+  const actualDmg=oldHp-c.hp;
+  const killed=c.hp<=0&&oldHp>0?c.name:null;
+  if(actualDmg>0&&c.concentracion)showConSavePrompt(cid,actualDmg);
+  const label=DMG_LABELS[type]||type;
+  combatLog.push({cname:c.name,faction:c.faction,quickHp:{isDmg:true,amount:amt,actual:actualDmg,hpAfter:c.hp,maxHp:c.maxHp,killed,dmgType:label,modifier}});
+  renderSB();renderC();renderLog();checkVictory();
+}
+
+function closeDTOV(){
+  dtovState=null;
+  document.getElementById('dtov').classList.remove('show');
+}
+
+// DEFENSE FORM HELPERS
+function initDefChecks(){
+  const mkChks=(containerId,types)=>{
+    const el=document.getElementById(containerId);
+    if(!el)return;
+    el.innerHTML=types.map(t=>`<label class="def-chk"><input type="checkbox" value="${t.v}" onchange="updateDefBadge()"> ${t.l}</label>`).join('');
+  };
+  mkChks('def-res-checks',DMG_TYPES);
+  mkChks('def-imm-checks',DMG_TYPES);
+  mkChks('def-vul-checks',DMG_TYPES);
+  mkChks('def-cond-checks',COND_TYPES);
+}
+
+function toggleDef(){
+  const body=document.getElementById('def-body');
+  const chev=document.getElementById('def-chev');
+  const open=body.style.display==='none';
+  body.style.display=open?'':'none';
+  chev.style.transform=open?'rotate(90deg)':'';
+}
+
+function updateDefBadge(){
+  const total=['def-res-checks','def-imm-checks','def-vul-checks','def-cond-checks']
+    .reduce((s,id)=>{const el=document.getElementById(id);return s+(el?el.querySelectorAll('input:checked').length:0);},0);
+  const badge=document.getElementById('def-badge');
+  if(badge){badge.textContent=total?`${total} seleccionadas`:'';badge.style.display=total?'':'none';}
+}
+
+function getDefs(){
+  const getChecked=id=>[...document.querySelectorAll(`#${id} input:checked`)].map(el=>el.value);
+  return{
+    resistencias:getChecked('def-res-checks'),
+    inmunidades:getChecked('def-imm-checks'),
+    vulnerabilidades:getChecked('def-vul-checks'),
+    inmunidades_condicion:getChecked('def-cond-checks')
+  };
+}
+
+function setDefs(defs){
+  const setChecked=(id,vals)=>{
+    document.querySelectorAll(`#${id} input[type=checkbox]`).forEach(cb=>{cb.checked=vals&&vals.includes(cb.value);});
+  };
+  setChecked('def-res-checks',(defs&&defs.resistencias)||[]);
+  setChecked('def-imm-checks',(defs&&defs.inmunidades)||[]);
+  setChecked('def-vul-checks',(defs&&defs.vulnerabilidades)||[]);
+  setChecked('def-cond-checks',(defs&&defs.inmunidades_condicion)||[]);
+  updateDefBadge();
+}
+
+function clearDefs(){setDefs(null);}
+
+function parseNpcDefs(pnj){
+  const arr=v=>{if(!v)return[];if(Array.isArray(v))return v;try{return JSON.parse(v);}catch{return[];}};
+  return{
+    resistencias:arr(pnj.resistencias_dano),
+    inmunidades:arr(pnj.inmunidades_dano),
+    vulnerabilidades:arr(pnj.vulnerabilidades_dano),
+    inmunidades_condicion:arr(pnj.inmunidades_condicion)
+  };
+}
+
+// FORM
+function setF(f){
+  formF=f;
+  document.getElementById('fb-en').className='fb'+(f==='enemigo'?' f-en':'');
+  document.getElementById('fb-al').className='fb'+(f==='aliado'?' f-al':'');
+  document.getElementById('fb-ju').className='fb'+(f==='jugador'?' f-ju':'');
+  const p=f==='jugador';
+  const editing=!!editId;
+  document.querySelectorAll('.npc-f').forEach(el=>el.style.display=p?'none':'');
+  document.getElementById('f-name-wrap').style.display=(!p||editing)?'':'none';
+  document.getElementById('f-ac-wrap').style.display=(!p||editing)?'':'none';
+  document.getElementById('f-if-wrap').style.display=(p&&editing)?'':'none';
+  document.getElementById('f-sv-wrap').style.display=(p&&editing)?'':'none';
+  document.getElementById('bulk-section').style.display=(p&&!editing)?'':'none';
+  document.getElementById('f-def-wrap').style.display=p?'none':'';
+  // Live preview: while editing, pre-fill missing fields when switching faction
+  if(editing){
+    const o=creatures.find(x=>x.id===editId);
+    if(o){
+      if(!p&&(!document.getElementById('f-hp').value||parseInt(document.getElementById('f-hp').value)<1))
+        document.getElementById('f-hp').value=o.maxHp||1;
+      if(p&&!document.getElementById('f-if').value.trim())
+        document.getElementById('f-if').value=o.initFixed||o.rolledInit||0;
+    }
+  }
+}
+
+function toggleMulti(cb){const n=cb.closest('.fac').querySelector('.fac-multi-n');if(n)n.style.display=cb.checked?'':'none';}
+function toggleReq(cb){const sel=cb.closest('.fac').querySelector('.fac-req-n');if(!sel)return;sel.style.display=cb.checked?'':'none';if(cb.checked)refreshReqOpts(sel);}
+function toggleLim(cb){const fac=cb.closest('.fac');const lbl=cb.closest('label');if(lbl)lbl.style.color=cb.checked?'#5bc8f4':'var(--txd)';fac.querySelector('.fac-lim-max').style.display=cb.checked?'':'none';fac.querySelector('.fac-lim-est').style.display=cb.checked?'':'none';}
+function toggleRec(cb){const fac=cb.closest('.fac');const lbl=cb.closest('label');if(lbl)lbl.style.color=cb.checked?'#6495ed':'var(--txd)';fac.querySelector('.fac-rec-n').style.display=cb.checked?'':'none';}
+
+function refreshReqOpts(sel){
+  const currentCard=sel.closest('.fac');
+  const currentVal=sel.value;
+  const allNames=[...document.querySelectorAll('#al .fac .fac1 input')]
+    .filter(inp=>inp.closest('.fac')!==currentCard)
+    .map(inp=>inp.value.trim())
+    .filter(Boolean);
+  sel.innerHTML=`<option value="">-- Seleccionar acción --</option>`+
+    allNames.map(n=>`<option value="${escH(n)}"${n===currentVal?' selected':''}>${escH(n)}</option>`).join('');
+  if(currentVal&&!allNames.includes(currentVal))
+    sel.insertAdjacentHTML('afterbegin',`<option value="${escH(currentVal)}" selected>${escH(currentVal)}</option>`);
+}
+
+function showLockedToast(el){
+  const name=el.dataset.reqname||'esta acción';
+  const prev=document.getElementById('locked-toast');if(prev)prev.remove();
+  const t=document.createElement('div');t.id='locked-toast';
+  t.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:rgba(10,10,20,.95);border:1px solid rgba(122,28,28,.7);color:#e8e8f0;padding:9px 16px;border-radius:7px;font-size:12px;z-index:999;pointer-events:none;white-space:nowrap;box-shadow:0 4px 18px rgba(0,0,0,.5);max-width:90vw;text-align:center';
+  t.textContent=`🔒 Requiere que "${name}" impacte primero`;
+  document.body.appendChild(t);
+  setTimeout(()=>t.remove(),2200);
+}
+
+// ── VICTORIA / DERROTA ───────────────────────────────────────────────────────
+function checkVictory(){
+  if(!inCombat)return;
+  const enemies=creatures.filter(c=>c.faction==='enemigo');
+  const heroes=creatures.filter(c=>c.faction!=='enemigo');
+  if(!enemies.length||!heroes.length)return; // need both sides
+  const allEnemiesDead=enemies.every(c=>isD(c));
+  const allHeroesDead=heroes.every(c=>isD(c));
+  const heroesAlive=heroes.some(c=>!isD(c));
+  const enemiesAlive=enemies.some(c=>!isD(c));
+  const vov=document.getElementById('vov');
+  if(allEnemiesDead&&heroesAlive){showVictory('heroes');}
+  else if(allHeroesDead&&enemiesAlive){showVictory('enemies');}
+  else{if(vov.classList.contains('show'))vov.classList.remove('show');}
+}
+
+function calcCombatStats(){
+  let totalDmg=0,crits=0;
+  combatLog.forEach(e=>{
+    if(e.multiataques){
+      e.multiataques.forEach(s=>{
+        if(s.dmg)s.dmg.forEach(d=>totalDmg+=d.total||0);
+        if(s.atk?.critical&&!s.atk.autoHit)crits++;
+      });
+    } else if(e.atk){
+      if(e.dmg)e.dmg.forEach(d=>totalDmg+=d.total||0);
+      if(e.atk.critical&&!e.atk.autoHit)crits++;
+    } else if(e.auraDmg){
+      totalDmg+=e.auraDmg.total||0;
+    } else if(e.quickHp?.isDmg){
+      totalDmg+=e.quickHp.actual||0;
+    }
+  });
+  const enemyKills=creatures.filter(c=>c.faction==='enemigo'&&isD(c)).length;
+  const heroKills=creatures.filter(c=>c.faction!=='enemigo'&&isD(c)).length;
+  return{totalDmg,crits,enemyKills,heroKills};
+}
+
+function showVictory(side){
+  const vov=document.getElementById('vov');
+  if(vov.classList.contains('show'))return;
+  const isHeroes=side==='heroes';
+  const{totalDmg,crits,enemyKills,heroKills}=calcCombatStats();
+  document.getElementById('vov-title').textContent=isHeroes?'⚔️ ¡VICTORIA!':'💀 DERROTA';
+  document.getElementById('vov-sub').textContent=isHeroes?'Los héroes han triunfado':'Los héroes han caído...';
+  document.getElementById('vov-rounds').textContent=round;
+  document.getElementById('vov-dmg').textContent=totalDmg;
+  document.getElementById('vov-crits').textContent=crits;
+  document.getElementById('vov-kills-lbl').textContent=isHeroes?'Bajas enemigas':'Bajas heroicas';
+  document.getElementById('vov-kills').textContent=isHeroes?enemyKills:heroKills;
+  vov.className=`show v-${side}`;
+  spawnVictoryParticles(isHeroes);
+}
+
+function spawnVictoryParticles(golden){
+  const vov=document.getElementById('vov');
+  vov.querySelectorAll('.vparticle').forEach(p=>p.remove());
+  const colors=golden
+    ?['#FFD700','#FFA500','#FFE55C','#fff','#C9A84C','#f0c060']
+    :['#e94560','#7A1C1C','#ff6b6b','#c0392b','#922b21'];
+  for(let i=0;i<36;i++){
+    const p=document.createElement('div');p.className='vparticle';
+    const sz=Math.random()*7+3;
+    const x=Math.random()*100;
+    const dur=(Math.random()*2.5+2).toFixed(1);
+    const delay=(Math.random()*2).toFixed(1);
+    const color=colors[Math.floor(Math.random()*colors.length)];
+    const w=Math.random()>0.5?sz:sz*2.5; // mix squares and rectangles
+    p.style.cssText=`width:${w}px;height:${sz}px;left:${x}%;bottom:-20px;background:${color};`+
+      `animation-duration:${dur}s;animation-delay:${delay}s;border-radius:${Math.random()>0.5?'50%':'2px'};`;
+    vov.appendChild(p);
+  }
+}
+
+function resetCombate(){
+  document.getElementById('vov').classList.remove('show');
+  document.getElementById('vov').querySelectorAll('.vparticle').forEach(p=>p.remove());
+  creatures=[];combatOrder=[];combatLog=[];
+  turnIndex=-1;round=1;inCombat=false;
+  rollMode='normal';rollModeManual=false;autoCrit=false;
+  pendingAction=null;pendingAuras=[];pendingReaction=null;multiAtkSeq=null;
+  editId=null;formF='enemigo';
+  const bs=document.getElementById('btn-start');if(bs)bs.style.display='';
+  clearF();switchTab('combat');renderSB();renderC();renderLog();
+}
+
+function vovHistorial(){
+  document.getElementById('vov').classList.remove('show');
+  openHistorial();
+}
+
+// ── RESURRECCIÓN ─────────────────────────────────────────────────────────────
+function openResucitar(id){
+  const c=creatures.find(x=>x.id===id);if(!c)return;
+  resucitarTarget=id;
+  document.getElementById('resov-tit').textContent=`💀→❤️ Resucitar a ${c.name}`;
+  document.getElementById('resov-body').textContent=`¿Con cuántos PG vuelve ${c.name}? (máx. ${c.maxHp})`;
+  const inp=document.getElementById('resov-hp');inp.value=1;inp.max=c.maxHp;
+  document.getElementById('resov').classList.add('show');
+  setTimeout(()=>inp.focus(),80);
+}
+function closeResov(){document.getElementById('resov').classList.remove('show');resucitarTarget=null;}
+function confirmarResucitar(){
+  const id=resucitarTarget;closeResov();
+  const c=creatures.find(x=>x.id===id);if(!c)return;
+  const hp=Math.max(1,Math.min(c.maxHp,parseInt(document.getElementById('resov-hp').value)||1));
+  c.hp=hp;
+  c.hasTurned=false;
+  combatLog.push({cname:c.name,faction:c.faction,aname:'Resucitado',round,resucitado:{hp}});
+  renderSB();renderC();renderLog();
+  checkVictory();
+  if(inCombat){
+    setTimeout(()=>{
+      const el=document.getElementById('mc-'+id);
+      if(el){el.classList.add('mc-resucitado');setTimeout(()=>el.classList.remove('mc-resucitado'),2100);}
+    },60);
+  }
+}
+
+function toggleInconsciente(id){
+  const c=creatures.find(x=>x.id===id);if(!c)return;
+  c.inconsciente=!c.inconsciente;
+  combatLog.push({cname:c.name,faction:c.faction,aname:c.inconsciente?'Inconsciente':'Recuperado',round,
+    quickHp:{isDmg:c.inconsciente,amount:0,actual:0,hpAfter:c.hp,maxHp:c.maxHp||0,
+      killed:null,dmgType:null,modifier:null,statusChange:c.inconsciente?'inconsciente':'recuperado'}});
+  renderSB();renderC();renderLog();checkVictory();
+}
+
+// ── CONCENTRACIÓN ────────────────────────────────────────────────────────────
+function closeCOV(){document.getElementById('cov').classList.remove('show');concentracionPendiente=null;}
+function closeConSOV(){document.getElementById('consov').classList.remove('show');document.getElementById('consov-result-wrap').innerHTML='';document.getElementById('consov-btns').style.display='flex';conSaveData=null;}
+
+function confirmarCambioConcentracion(){
+  closeCOV();
+  if(!concentracionPendiente)return;
+  const{cid,ai}=concentracionPendiente;concentracionPendiente=null;
+  const c=creatures.find(x=>x.id===cid);
+  if(c){
+    const anterior=c.concentracion?.nombre||'';
+    c.concentracion=null;
+    if(anterior)combatLog.push({cname:c.name,faction:c.faction,aname:'Concentración cancelada',round,concRota:{conjuro:anterior}});
+    renderSB();renderC();renderLog();
+  }
+  rollAct(cid,ai);
+}
+
+function romperConcentracion(cid){
+  const c=creatures.find(x=>x.id===cid);if(!c||!c.concentracion)return;
+  combatLog.push({cname:c.name,faction:c.faction,aname:'Concentración rota',round,concRota:{conjuro:c.concentracion.nombre}});
+  c.concentracion=null;
+  renderSB();renderC();renderLog();
+}
+
+function showConSavePrompt(cid,dmg){
+  const c=creatures.find(x=>x.id===cid);if(!c||!c.concentracion)return;
+  const cd=Math.max(10,Math.floor(dmg/2));
+  conSaveData={cid,cd};
+  const mod=isP(c)?(c.salvaciones?.con??c.conMod??0):(c.conMod||0);
+  const modStr=mod>=0?`+${mod}`:String(mod);
+  const modSrc=isP(c)&&c.salvaciones?'Sal. CON':'Mod. CON';
+  document.getElementById('consov-body').innerHTML=`
+    <div style="font-size:12px;color:var(--txd);line-height:1.8">
+      <b style="color:var(--tx)">${escH(c.name)}</b> recibió <b style="color:var(--en)">${dmg}</b> de daño.<br>
+      Debe superar salvación de <b style="color:var(--al)">CON CD ${cd}</b> para mantener<br>concentración en <b style="color:#a78bfa">"${escH(c.concentracion.nombre)}"</b>.
+    </div>
+    <div style="margin-top:7px;font-size:11px;padding:5px 9px;background:rgba(255,255,255,.04);border-radius:4px;border:1px solid var(--brd)">
+      ${modSrc}: <b style="color:var(--tx)">${modStr}</b> · Tirada: 1d20${modStr} ≥ ${cd}
+    </div>`;
+  document.getElementById('consov-result-wrap').innerHTML='';
+  document.getElementById('consov-btns').innerHTML=`<button class="btn btn-p" style="flex:1" onclick="rollConSaveAuto()">🎲 Tirar salvación CON</button><button class="btn btn-s" style="flex:1" onclick="closeConSOV()">Ignorar</button>`;
+  document.getElementById('consov').classList.add('show');
+}
+
+function rollConSaveAuto(){
+  if(!conSaveData)return;
+  const{cid,cd}=conSaveData;
+  const c=creatures.find(x=>x.id===cid);if(!c)return;
+  const mod=isP(c)?(c.salvaciones?.con??c.conMod??0):(c.conMod||0);
+  const roll=Math.floor(Math.random()*20)+1;
+  const total=roll+mod;
+  const passed=total>=cd;
+  const conjuro=c.concentracion?.nombre||'?';
+  const bonStr=mod>=0?`+${mod}`:String(mod);
+  combatLog.push({cname:c.name,faction:c.faction,aname:'Salvación CON',round,conSave:{roll,mod,total,cd,passed,conjuro}});
+  if(!passed)c.concentracion=null;
+  // Show result inside modal before closing
+  const rw=document.getElementById('consov-result-wrap');
+  rw.innerHTML=`<div class="consov-result ${passed?'pass':'fail'}">${passed?`✅ ¡Supera! (${roll}${bonStr}=${total} vs CD${cd}) — Mantiene "${escH(conjuro)}"`:`💨 ¡Falla! (${roll}${bonStr}=${total} vs CD${cd}) — Pierde concentración en "${escH(conjuro)}"`}</div>`;
+  document.getElementById('consov-btns').innerHTML=`<button class="btn btn-s" style="flex:1;margin-top:0" onclick="closeConSOV();renderSB();renderC();renderLog()">Cerrar</button>`;
+  conSaveData=null;
+  renderLog();
+  if(!passed){renderSB();renderC();}
+}
+
+function addAC(data){
+  const type=data?data.type:'ataque',name=data?data.name||'':'';
+  const atkB=data?(data.attackBonus!==undefined?data.attackBonus:(data.attackDice?0:0)):0;
+  const sdc=data?data.saveDC||'':'',sab=data?data.saveAbility||'Fuerza':'Fuerza';
+  const dmgE=data?data.damageEntries||[]:[];
+  const multi=data?!!data.multiataque:false;
+  const numAtk=data?(data.num_ataques||2):2;
+  const reqImpacto=data?!!data.requiere_impacto:false;
+  const reqNombre=data?data.accion_requerida||'':'';
+  const conc=data?!!data.concentracion:false;
+  const tieneLimite=data?!!data.tiene_limite:false;
+  const maxCriat=data?(data.max_criaturas||1):1;
+  const estadoApl=data?data.estado_aplicado||'':'';
+  const rec=data?(data.recarga||null):null;
+  const trigger=data?(data.trigger||'golpeado'):'golpeado';
+  const card=document.createElement('div');card.className='fac';card.dataset.type=type;
+  card.innerHTML=`<div class="fac1">
+    <input type="text" placeholder="Nombre de la acción" value="${escH(name)}">
+    <div class="attgl">
+      <button class="atb ${type==='ataque'?'atk':''}"    onclick="setAT(this,'ataque')">Ataque</button>
+      <button class="atb ${type==='salvacion'?'sav':''}" onclick="setAT(this,'salvacion')">Salvación</button>
+      <button class="atb ${type==='reaccion'?'rea':''}"  onclick="setAT(this,'reaccion')">⚡ Reacción</button>
+    </div>
+    <button class="rem" onclick="this.closest('.fac').remove()">×</button>
+  </div>
+  <div class="fac-atks fasec" style="display:${type==='ataque'||type==='reaccion'?'':'none'}">
+    <div class="fasec-t">Bonificador de Ataque</div>
+    <div class="ab-row"><span class="ab-lbl">1d20 +</span><input class="fac-ab ab-in" type="number" placeholder="0" value="${atkB}"></div>
+    <div class="ab-row" style="margin-top:5px;gap:8px">
+      <label style="cursor:pointer;display:flex;align-items:center;gap:4px;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:${multi?'#C9A84C':'var(--txd)'}">
+        <input type="checkbox" class="fac-multi-cb" ${multi?'checked':''} onchange="toggleMulti(this)">Multiataque
+      </label>
+      <input class="fac-multi-n ab-in" type="number" min="2" max="10" value="${numAtk}" title="Número de ataques" style="display:${multi?'':'none'};width:50px">
+    </div>
+    <div class="ab-row" style="margin-top:5px;gap:8px;align-items:center">
+      <label style="cursor:pointer;display:flex;align-items:center;gap:4px;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:${reqImpacto?'#a78bfa':'var(--txd)'}">
+        <input type="checkbox" class="fac-req-cb" ${reqImpacto?'checked':''} onchange="toggleReq(this)">Req. impacto
+      </label>
+      <select class="fac-req-n" title="Acción que debe impactar primero" style="display:${reqImpacto?'':'none'};flex:1;min-width:0;padding:3px 6px;font-size:11px;" onfocus="refreshReqOpts(this)" onmousedown="refreshReqOpts(this)">
+        ${reqNombre?`<option value="${escH(reqNombre)}" selected>${escH(reqNombre)}</option>`:'<option value="">-- Seleccionar acción --</option>'}
+      </select>
+    </div>
+  </div>
+  <div class="fac-savs fasec" style="display:${type==='salvacion'?'':'none'}">
+    <div class="fasec-t">Salvación</div>
+    <div class="irow">
+      <div class="fg" style="max-width:70px"><label>CD</label><input class="fac-sd" type="number" placeholder="14" value="${escH(String(sdc))}"></div>
+      <div class="fg"><label>Característica</label><select class="fac-sa">${ABILS.map(a=>`<option ${a===sab?'selected':''}>${a}</option>`).join('')}</select></div>
+    </div>
+  </div>
+  <div class="fac-reas fasec" style="display:${type==='reaccion'?'':'none'}">
+    <div class="fasec-t">Disparador</div>
+    <select class="fac-tri" style="width:100%">
+      <option value="golpeado" ${trigger==='golpeado'?'selected':''}>⚔️ Al recibir un golpe (impacto)</option>
+      <option value="atacado"  ${trigger==='atacado'?'selected':''}>🎯 Al ser atacado (impacte o no)</option>
+      <option value="manual"   ${trigger==='manual'?'selected':''}>🖐 Activación manual</option>
+    </select>
+  </div>
+  <div style="padding:4px 0 2px">
+    <label style="cursor:pointer;display:flex;align-items:center;gap:5px;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:${conc?'#a78bfa':'var(--txd)'}">
+      <input type="checkbox" class="fac-conc-cb" ${conc?'checked':''} onchange="this.closest('label').style.color=this.checked?'#a78bfa':'var(--txd)'">🔮 Concentración
+    </label>
+  </div>
+  <div style="padding:4px 0 2px">
+    <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+      <label style="cursor:pointer;display:flex;align-items:center;gap:5px;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:${tieneLimite?'#5bc8f4':'var(--txd)'}">
+        <input type="checkbox" class="fac-lim-cb" ${tieneLimite?'checked':''} onchange="toggleLim(this)">🔢 Límite criaturas
+      </label>
+      <input class="fac-lim-max ab-in" type="number" min="1" max="20" value="${maxCriat}" title="Máximo de criaturas afectadas simultáneamente" style="display:${tieneLimite?'':'none'};width:48px">
+      <input class="fac-lim-est" type="text" placeholder="Estado (ej: Aferrada)" value="${escH(estadoApl)}" style="display:${tieneLimite?'':'none'};flex:1;min-width:80px;padding:3px 6px;font-size:11px;background:rgba(91,200,244,.07);border:1px solid rgba(91,200,244,.3);border-radius:3px;color:var(--tx);outline:none">
+    </div>
+  </div>
+  <div style="padding:4px 0 2px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+    <label style="cursor:pointer;display:flex;align-items:center;gap:5px;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:${rec?'#6495ed':'var(--txd)'}">
+      <input type="checkbox" class="fac-rec-cb" ${rec?'checked':''} onchange="toggleRec(this)">🎲 Recarga
+    </label>
+    <select class="fac-rec-n" title="Recarga con 1d6 ≥ valor al inicio del turno" style="display:${rec?'':'none'};width:auto;padding:3px 6px;font-size:11px">
+      <option value="6" ${rec===6?'selected':''}>6</option>
+      <option value="5" ${rec===5?'selected':''}>5-6</option>
+      <option value="4" ${rec===4?'selected':''}>4-6</option>
+      <option value="3" ${rec===3?'selected':''}>3-6</option>
+      <option value="2" ${rec===2?'selected':''}>2-6</option>
+    </select>
+  </div>
+  <div class="fasec">
+    <div class="fasec-t">Daño <span style="opacity:.5">(ej: 2d6, 3d8…)</span></div>
+    <div class="dlist"></div>
+    <button class="btn btn-s btn-sm" style="margin-top:4px;width:fit-content" onclick="addDR(this)">+ Tipo de daño</button>
+  </div>`;
+  document.getElementById('al').appendChild(card);
+  const btn=card.querySelector('.fasec .btn');
+  if(dmgE.length)dmgE.forEach(d=>addDR(btn,d.dice,d.bonus,d.label,d.ignoresResistance));
+  else addDR(btn);
+}
+
+function setAT(btn,type){
+  const c=btn.closest('.fac');c.dataset.type=type;
+  c.querySelectorAll('.atb').forEach(b=>b.classList.remove('atk','sav','rea'));
+  btn.classList.add(type==='ataque'?'atk':type==='salvacion'?'sav':'rea');
+  c.querySelector('.fac-atks').style.display=(type==='ataque'||type==='reaccion')?'':'none';
+  c.querySelector('.fac-savs').style.display=type==='salvacion'?'':'none';
+  c.querySelector('.fac-reas').style.display=type==='reaccion'?'':'none';
+}
+
+function addDR(btn,dice='1d6',bonus=0,label='',res=false){
+  const m=dice.match(/^(\d+)?d(\d+)$/i);
+  const cnt=m?(parseInt(m[1])||1):1;
+  const side=m?`d${m[2]}`:'d6';
+  const row=document.createElement('div');row.className='drow';
+  row.innerHTML=`<input class="dcnt" type="number" min="1" value="${cnt}" title="Cantidad de dados">
+    <select class="ddi">${DICE_SIDES.map(d=>`<option ${d===side?'selected':''}>${d}</option>`).join('')}</select>
+    <input class="dbon" type="number" placeholder="+0" value="${bonus||''}" title="Bonificador">
+    <input class="dtyp" type="text" placeholder="tipo (ej: fuego)" value="${escH(label)}">
+    <label class="drow-res" title="Ignora resistencia"><input type="checkbox" ${res?'checked':''}><span>⚡</span></label>
+    <button class="rem" onclick="this.parentElement.remove()">×</button>`;
+  btn.previousElementSibling.appendChild(row);
+}
+
+function getActs(){
+  return[...document.querySelectorAll('#al .fac')].map(card=>{
+    const type=card.dataset.type||'ataque';
+    const name=card.querySelector('.fac1 input').value.trim();
+    const dmgE=[...card.querySelectorAll('.drow')].map(r=>({
+      dice:`${parseInt(r.querySelector('.dcnt').value)||1}${r.querySelector('.ddi').value}`,
+      bonus:parseInt(r.querySelector('.dbon').value)||0,
+      label:r.querySelector('.dtyp').value.trim(),
+      ignoresResistance:r.querySelector('input[type=checkbox]').checked
+    }));
+    const multiCb=card.querySelector('.fac-multi-cb');
+    const multiN=card.querySelector('.fac-multi-n');
+    const multiataque=multiCb?multiCb.checked:false;
+    const num_ataques=multiataque?Math.max(2,Math.min(10,parseInt(multiN?.value)||2)):1;
+    const reqCb=card.querySelector('.fac-req-cb');
+    const reqN=card.querySelector('.fac-req-n');
+    const requiere_impacto=reqCb?reqCb.checked:false;
+    const accion_requerida=requiere_impacto?(reqN?.value.trim()||''):'';
+    const concCb=card.querySelector('.fac-conc-cb');
+    const concentracion=concCb?concCb.checked:false;
+    const limCb=card.querySelector('.fac-lim-cb');
+    const tiene_limite=limCb?limCb.checked:false;
+    const max_criaturas=tiene_limite?Math.max(1,parseInt(card.querySelector('.fac-lim-max')?.value)||1):1;
+    const estado_aplicado=tiene_limite?(card.querySelector('.fac-lim-est')?.value.trim()||''):'' ;
+    const limBase={tiene_limite,max_criaturas,estado_aplicado};
+    const recCb=card.querySelector('.fac-rec-cb');
+    const recarga=recCb?.checked?(parseInt(card.querySelector('.fac-rec-n')?.value)||6):null;
+    const trigger=card.querySelector('.fac-tri')?.value||'golpeado';
+    if(type==='reaccion'){
+      return{name,type:'reaccion',trigger,attackBonus:parseInt(card.querySelector('.fac-ab')?.value)||0,damageEntries:dmgE,concentracion,recarga};
+    }
+    return type==='ataque'
+      ?{name,type,attackBonus:parseInt(card.querySelector('.fac-ab').value)||0,damageEntries:dmgE,multiataque,num_ataques,requiere_impacto,accion_requerida,concentracion,...limBase,recarga}
+      :{name,type,saveDC:parseInt(card.querySelector('.fac-sd').value)||0,saveAbility:card.querySelector('.fac-sa').value,damageEntries:dmgE,multiataque:false,num_ataques:1,requiere_impacto:false,accion_requerida:'',concentracion,...limBase,recarga};
+  });
+}
+
+function saveC(){
+  const name=document.getElementById('f-name').value.trim();
+  const type=document.getElementById('f-type').value.trim()||'Sin tipo';
+  const tamanio=document.getElementById('f-tam').value||'Mediano';
+  const hp=parseInt(document.getElementById('f-hp').value);
+  const ac=parseInt(document.getElementById('f-ac').value)||0;
+  const im=parseInt(document.getElementById('f-im').value)||0;
+  const iff=parseInt(document.getElementById('f-if').value)||0;
+  const cnt=Math.max(1,parseInt(document.getElementById('f-cnt').value)||1);
+  const player=formF==='jugador';
+  const acts=getActs();
+  const svIds=['fue','des','con','int','sab','car'];
+  const salvaciones=player?Object.fromEntries(svIds.map(k=>[k,parseInt(document.getElementById('f-sv-'+k)?.value)||0])):null;
+  const defs=player?null:getDefs();
+  const editingC=editId?creatures.find(x=>x.id===editId):null;
+  if(!name)return showErr('El nombre es obligatorio.');
+  // When editing and changing faction, use existing values as fallback so validation doesn't block
+  if(!player&&(!hp||hp<1)&&!(editingC&&editingC.maxHp>0))return showErr('La vida debe ser un número positivo.');
+  if(player&&!document.getElementById('f-if').value.trim()&&!(editingC&&(editingC.initFixed||editingC.rolledInit)))return showErr('Los jugadores necesitan un valor de iniciativa.');
+  for(const a of acts){
+    if(a.type==='ataque'&&a.attackDice&&!parseDice(a.attackDice))return showErr(`Ataque inválido: "${a.attackDice}"`);
+    if(a.type==='salvacion'&&!a.saveDC)return showErr(`Falta CD en "${a.name}".`);
+  }
+  document.getElementById('ferr').style.display='none';
+
+  if(editId){
+    const idx=creatures.findIndex(x=>x.id===editId);
+    if(idx>=0){
+      const o=creatures[idx];
+      const prevFaction=o.faction;
+      const effectiveHp=hp||o.maxHp||1;
+      const effectiveIff=iff||(player?(o.initFixed||o.rolledInit||0):0);
+      const newAuras=getAuras().map((a,i)=>({...a,targets:(o.auras||[])[i]?.targets||[]}));
+      const updated={...o,name,type,tamanio,
+        maxHp:player?o.maxHp:effectiveHp,
+        hp:player?o.hp:Math.min(o.hp,effectiveHp),
+        ac,faction:formF,initMod:im,
+        initFixed:effectiveIff,
+        // Preserve existing actions when switching to jugador so they're not lost
+        actions:player?o.actions:acts,
+        auras:player?o.auras:newAuras,
+        salvaciones:player?salvaciones:o.salvaciones,
+        conMod:player?(salvaciones?.con||0):o.conMod,
+        ...(defs&&{resistencias:defs.resistencias,inmunidades:defs.inmunidades,vulnerabilidades:defs.vulnerabilidades,inmunidades_condicion:defs.inmunidades_condicion})
+      };
+      creatures[idx]=updated;
+      const ci=combatOrder.findIndex(x=>x.id===editId);if(ci>=0)combatOrder[ci]=updated;
+      if(prevFaction!==formF){
+        showToast(`${name} ahora es ${fl(formF)}`);
+      }
+    }
+    editId=null;clearF();renderSB();if(inCombat){renderC();}
+  } else {
+    const newOnes=[];
+    for(let i=1;i<=cnt;i++){
+      const cn=cnt>1?`${name} ${i}`:name;
+      const c={id:uid(),name:cn,type,tamanio,faction:formF,hp:player?0:hp,maxHp:player?0:hp,ac,initMod:im,initFixed:iff,rolledInit:0,hasTurned:false,concentracion:null,conMod:player?(salvaciones?.con||0):0,salvaciones,afectados:{},recargas:{},reaccion_usada:false,actions:player?[]:acts,auras:player?[]:getAuras(),resistencias:defs?defs.resistencias:[],inmunidades:defs?defs.inmunidades:[],vulnerabilidades:defs?defs.vulnerabilidades:[],inmunidades_condicion:defs?defs.inmunidades_condicion:[]};
+      creatures.push(c);newOnes.push(c);
+    }
+    clearF();
+    if(inCombat){newOnes.forEach(c=>insertMidCombat(c));}
+    else{renderSB();}
+  }
+  switchTab('combat');
+}
+
+function delC(){if(!editId)return;creatures=creatures.filter(x=>x.id!==editId);const ci=combatOrder.findIndex(x=>x.id===editId);if(ci>=0){combatOrder.splice(ci,1);if(turnIndex>=combatOrder.length)turnIndex=Math.max(0,combatOrder.length-1);}clearF();renderSB();if(inCombat)renderC();}
+function showErr(m){const e=document.getElementById('ferr');e.textContent=m;e.style.display='block';}
+function clearF(){['f-name','f-type','f-hp','f-ac','f-if'].forEach(id=>document.getElementById(id).value='');document.getElementById('f-im').value='0';document.getElementById('f-tam').value='Mediano';document.getElementById('f-cnt').value='1';document.getElementById('al').innerHTML='';document.getElementById('aul').innerHTML='';['fue','des','con','int','sab','car'].forEach(k=>{const el=document.getElementById('f-sv-'+k);if(el)el.value='';});clearDefs();document.getElementById('ferr').style.display='none';document.getElementById('bdel').style.display='none';editId=null;resetPlayerRows();setF('enemigo');renderSB();}
+function resetPlayerRows(){const pr=document.getElementById('player-rows');pr.innerHTML='';addPlayerRow();}
+function addPlayerRow(){
+  const row=document.createElement('div');row.className='prow';
+  row.innerHTML=`
+    <div class="prow-main">
+      <input type="text" class="prow-name" placeholder="Nombre del jugador">
+      <input type="number" class="prow-init" placeholder="Init" title="Iniciativa">
+      <input type="number" class="prow-ca" placeholder="CA" title="Clase de Armadura">
+      <input type="number" class="prow-pg" placeholder="PG" title="Puntos de Golpe máximos">
+      <button class="rem" onclick="this.closest('.prow').remove()" title="Eliminar">×</button>
+    </div>
+    <div class="prow-sv">
+      <span class="sv-lbl" style="margin-right:2px;color:rgba(255,255,255,.3)">Sal:</span>
+      <span class="sv-lbl">FUE</span><input type="number" class="sv-in" placeholder="0" title="Salvación FUE">
+      <span class="sv-lbl">DES</span><input type="number" class="sv-in" placeholder="0" title="Salvación DES">
+      <span class="sv-lbl">CON</span><input type="number" class="sv-in" placeholder="0" title="Salvación CON">
+      <span class="sv-lbl">INT</span><input type="number" class="sv-in" placeholder="0" title="Salvación INT">
+      <span class="sv-lbl">SAB</span><input type="number" class="sv-in" placeholder="0" title="Salvación SAB">
+      <span class="sv-lbl">CAR</span><input type="number" class="sv-in" placeholder="0" title="Salvación CAR">
+    </div>`;
+  document.getElementById('player-rows').appendChild(row);
+  row.querySelector('.prow-name').focus();
+}
+function savePlayers(){
+  const rows=[...document.querySelectorAll('#player-rows .prow')];
+  const valid=rows.filter(r=>r.querySelector('.prow-name').value.trim());
+  if(!valid.length){showErr('Añade al menos un jugador con nombre.');return;}
+  for(const r of valid){
+    const name=r.querySelector('.prow-name').value.trim();
+    if(!r.querySelector('.prow-init').value.trim()){showErr(`Falta la iniciativa de "${name}".`);return;}
+  }
+  document.getElementById('ferr').style.display='none';
+  const svKeys=['fue','des','con','int','sab','car'];
+  const newOnes=[];
+  valid.forEach(r=>{
+    const name=r.querySelector('.prow-name').value.trim();
+    const iff=parseInt(r.querySelector('.prow-init').value)||0;
+    const ac=parseInt(r.querySelector('.prow-ca').value)||0;
+    const pg=parseInt(r.querySelector('.prow-pg').value)||0;
+    const svInputs=[...r.querySelectorAll('.sv-in')];
+    const salvaciones=Object.fromEntries(svKeys.map((k,i)=>[k,parseInt(svInputs[i]?.value)||0]));
+    const c={id:uid(),name,type:'Jugador',faction:'jugador',hp:pg,maxHp:pg,ac,initMod:0,initFixed:iff,rolledInit:iff,hasTurned:false,concentracion:null,conMod:salvaciones.con,salvaciones,recargas:{},reaccion_usada:false,afectados:{},actions:[]};
+    creatures.push(c);newOnes.push(c);
+  });
+  if(inCombat){newOnes.forEach(c=>insertMidCombat(c));}else{renderSB();}
+  clearF();switchTab('combat');
+}
+function saveCurrent(){if(formF==='jugador'&&!editId)savePlayers();else saveC();}
+function openNewForm(){clearF();switchTab('form');}
+
+function switchTab(n){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===n));
+  document.getElementById('tab-combat').classList.toggle('active',n==='combat');
+  document.getElementById('tab-form').classList.toggle('active',n==='form');
+  document.getElementById('tab-fichas').classList.toggle('active',n==='fichas');
+  if(n==='fichas'&&!fichasPnj.length)cargarFichas();
+}
+
+// ── PANEL MIS FICHAS ──────────────────────────────────────────────────────────
+let fichasPnj=[];
+const fichaFaccion={};  // npcId → 'enemigo' | 'aliado'
+
+function cargarFichas(){
+  const list=document.getElementById('fp-list');
+  if(!localStorage.getItem('usuario')){
+    list.innerHTML='<div class="fp-empty">Inicia sesión en el panel principal<br>para ver tus fichas aquí.</div>';
+    return;
+  }
+  list.innerHTML='<div class="fp-empty">Cargando fichas…</div>';
+  fetch('/api/npcs',{credentials:'include'})
+    .then(r=>{if(!r.ok)throw r.status;return r.json();})
+    .then(npcs=>{fichasPnj=npcs;filtrarFichas();})
+    .catch(e=>{
+      list.innerHTML=`<div class="fp-empty">${e===401?'Sesión expirada. Inicia sesión de nuevo en el panel.':'Error al cargar las fichas. Comprueba tu conexión.'}</div>`;
+    });
+}
+
+function filtrarFichas(){
+  const q=(document.getElementById('fp-q')?.value||'').toLowerCase();
+  const filtered=fichasPnj.filter(n=>(n.nombre||'').toLowerCase().includes(q));
+  renderFichas(filtered);
+}
+
+function renderFichas(npcs){
+  const list=document.getElementById('fp-list');
+  if(!npcs.length){
+    list.innerHTML='<div class="fp-empty">Sin fichas que mostrar.</div>';
+    return;
+  }
+  list.innerHTML=npcs.map(n=>{
+    const f=fichaFaccion[n.id]||'enemigo';
+    return`<div class="fp-card" id="fpc-${n.id}">
+      <div class="fp-info">
+        <div class="fp-name">${escH(n.nombre)}</div>
+        <div class="fp-meta">${escH(n.tipo||'Sin tipo')} · ${n.puntos_de_golpe||'?'} HP · CA ${n.clase_armadura||'?'}</div>
+      </div>
+      <div class="fp-ftgl">
+        <button class="fp-fb ${f==='enemigo'?'sel-en':''}" onclick="setFpFaccion(${n.id},'enemigo')">Enem.</button>
+        <button class="fp-fb ${f==='aliado'?'sel-al':''}"  onclick="setFpFaccion(${n.id},'aliado')">Aliado</button>
+      </div>
+      <button class="fp-add" onclick="addFichaACombate(${n.id})">+ Añadir</button>
+    </div>`;
+  }).join('');
+}
+
+function setFpFaccion(id,faccion){
+  fichaFaccion[id]=faccion;
+  const card=document.getElementById(`fpc-${id}`);
+  if(!card)return;
+  const [btnEn,btnAl]=card.querySelectorAll('.fp-fb');
+  btnEn.className='fp-fb'+(faccion==='enemigo'?' sel-en':'');
+  btnAl.className='fp-fb'+(faccion==='aliado'?' sel-al':'');
+}
+
+function addFichaACombate(npcId){
+  const pnj=fichasPnj.find(n=>n.id===npcId);
+  if(!pnj)return;
+  const faccion=fichaFaccion[npcId]||'enemigo';
+  const dexMod=Math.floor(((pnj.destreza||10)-10)/2);
+  const conMod=Math.floor(((pnj.constitución||pnj.constitucion||10)-10)/2);
+  const c={
+    id:uid(),
+    name:pnj.nombre||'PNJ',
+    type:pnj.tipo||'Sin tipo',
+    tamanio:pnj.tamano||'Mediano',
+    faction:faccion,
+    hp:pnj.puntos_de_golpe||10,
+    maxHp:pnj.puntos_de_golpe||10,
+    ac:pnj.clase_armadura||10,
+    initMod:dexMod,
+    initFixed:0,
+    rolledInit:0,
+    hasTurned:false,
+    concentracion:null,
+    conMod,
+    afectados:{},
+    recargas:{},
+    reaccion_usada:false,
+    auras:[],
+    ...parseNpcDefs(pnj),
+    actions:(()=>{
+      let rawAcc=[];
+      try{const v=pnj.acciones;if(v)rawAcc=typeof v==='string'?JSON.parse(v):(Array.isArray(v)?v:[]);}catch{}
+      return rawAcc.map(a=>{
+        if(a.tipo==='multiataque')return{tipo:'multiataque',name:a.nombre||a.name||'Multiataque',descripcion:a.descripcion||'',combinaciones:a.combinaciones||[]};
+        return{name:a.nombre||a.name||'Ataque',type:'ataque',multiataque:!!a.multiataque,attackBonus:Math.floor(((pnj.fuerza||10)-10)/2),damageEntries:[{dice:'1d6',bonus:0,label:'',ignoresResistance:false}],tiene_limite:!!a.tiene_limite,max_criaturas:a.max_criaturas||1,estado_aplicado:a.estado_aplicado||'',recarga:a.recarga||null};
+      });
+    })()
+  };
+  if(inCombat){insertMidCombat(c);}else{creatures.push(c);renderSB();}
+  // Feedback visual en el botón
+  const btn=document.querySelector(`#fpc-${npcId} .fp-add`);
+  if(btn){
+    const orig=btn.textContent;
+    btn.textContent='✓ Añadido';
+    btn.style.cssText='background:rgba(74,222,128,0.15);border-color:rgba(74,222,128,0.4);color:var(--ju);';
+    setTimeout(()=>{btn.textContent=orig;btn.style.cssText='';},1500);
+  }
+}
+function closeM(){document.getElementById('mov').classList.remove('show');}
+
+// ── HISTORIAL DE COMBATE ──────────────────────────────────────────────────────
+function openHistorial(){ renderHistorial(); document.getElementById('hov').classList.add('show'); }
+function closeHistorial(){ document.getElementById('hov').classList.remove('show'); }
+
+function _buildHistData(){
+  const atks=combatLog.filter(e=>!e.initRoll);
+  const parts=creatures.length?creatures
+    :[...new Set(atks.map(e=>e.cname))].map(name=>{const e=atks.find(x=>x.cname===name);return{name,faction:e?.faction||'enemigo'};});
+  const maxR=atks.length?Math.max(...atks.map(e=>e.round),round):round;
+  const allR=Array.from({length:maxR},(_,i)=>i+1);
+  const deathR={};
+  combatLog.forEach(e=>{
+    if(!e.killed)return;
+    (typeof e.killed==='string'?e.killed.split(', '):[e.killed]).forEach(n=>{const t=n.trim();if(!deathR[t])deathR[t]=e.round;});
+  });
+  const lkp={};
+  atks.forEach(e=>{if(!lkp[e.cname])lkp[e.cname]={};if(!lkp[e.cname][e.round])lkp[e.cname][e.round]=[];lkp[e.cname][e.round].push(e);});
+  return{parts,allR,deathR,lkp,atks};
+}
+
+function _cellData(name,r,deathR,lkp){
+  if(deathR[name]&&r>deathR[name])return{type:'dead'};
+  const entries=(lkp[name]||{})[r]||[];
+  if(!entries.length)return{type:'none'};
+  const e=entries[0];
+  if(e.multiataques){
+    if(e.multiataques.some(a=>a.atk?.critical))return{type:'crit'};
+    if(e.multiataques.some(a=>a.hit))return{type:'hit'};
+    return{type:'miss'};
+  }
+  if(e.atk?.critical)return{type:'crit'};
+  if(e.save)return{type:'save'};
+  return{type:e.hit?'hit':'miss'};
+}
+
+function renderHistorial(){
+  const wrap=document.getElementById('htable-wrap');
+  const{parts,allR,deathR,lkp,atks}=_buildHistData();
+  if(!atks.length){wrap.innerHTML='<div class="h-tbl-empty">No se han realizado ataques todavía.<br>Inicia el combate y usa acciones de ataque.</div>';return;}
+  const colH={},colT={};allR.forEach(r=>{colH[r]=0;colT[r]=0;});
+  let thead=`<table class="htbl"><thead><tr><th class="h-name-th">Participante</th>`;
+  allR.forEach(r=>{thead+=`<th>R${r}</th>`;});
+  thead+='<th class="h-sum-th">Resumen</th></tr></thead><tbody>';
+  let tbody='';
+  parts.forEach(c=>{
+    const name=c.name,f=fc(c.faction);
+    let hits=0,total=0;
+    let row=`<tr><td class="h-name ${f}">${escH(name)}</td>`;
+    allR.forEach(r=>{
+      const d=_cellData(name,r,deathR,lkp);
+      if(d.type==='dead'){row+=`<td class="h-dead" title="Eliminado">💀</td>`;}
+      else if(d.type==='none'){row+=`<td class="h-empty-cell">—</td>`;}
+      else if(d.type==='crit'){row+=`<td class="h-crit" title="¡Crítico!">⚔️</td>`;hits++;total++;colH[r]++;colT[r]++;}
+      else if(d.type==='save'){row+=`<td title="Salvación">🎲</td>`;total++;colT[r]++;}
+      else if(d.type==='hit'){row+=`<td class="h-hit" title="Impacto">✅</td>`;hits++;total++;colH[r]++;colT[r]++;}
+      else{row+=`<td class="h-miss" title="Fallo">❌</td>`;total++;colT[r]++;}
+    });
+    const pct=total>0?Math.round(hits/total*100):0;
+    row+=`<td class="h-sum">${total>0?`${hits}/${total} (${pct}%)`:'—'}</td></tr>`;
+    tbody+=row;
+  });
+  // Fila totales
+  let trow=`<tr class="h-totals"><td class="h-name">Totales</td>`;
+  let gh=0,gt=0;
+  allR.forEach(r=>{
+    const h=colH[r],t=colT[r];gh+=h;gt+=t;
+    const p=t>0?Math.round(h/t*100):0;
+    trow+=t>0?`<td title="R${r}: ${h}/${t} (${p}%)">${h}<span style="color:var(--txd);font-size:9px;font-weight:400;">/${t}</span></td>`:`<td class="h-empty-cell">—</td>`;
+  });
+  const gp=gt>0?Math.round(gh/gt*100):0;
+  trow+=`<td class="h-sum"><b>${gh}/${gt}</b> (${gp}%)</td></tr>`;
+  wrap.innerHTML=thead+tbody+trow+'</tbody></table>';
+}
+
+function exportarCSV(){
+  const{parts,allR,deathR,lkp,atks}=_buildHistData();
+  if(!atks.length){alert('No hay ataques que exportar.');return;}
+  const hdrs=['Participante','Facción',...allR.map(r=>`Ronda ${r}`),'Impactos','Ataques','% Acierto'];
+  const rows=[hdrs];
+  parts.forEach(c=>{
+    const name=c.name;let hits=0,total=0;
+    const cells=allR.map(r=>{
+      const d=_cellData(name,r,deathR,lkp);
+      if(d.type==='dead')return'Muerto';
+      if(d.type==='none')return'';
+      if(d.type==='crit'){hits++;total++;return'Crítico';}
+      if(d.type==='save'){total++;return'Salvación';}
+      if(d.type==='hit'){hits++;total++;return'Impacto';}
+      total++;return'Fallo';
+    });
+    const pct=total>0?Math.round(hits/total*100):0;
+    rows.push([name,fl(c.faction),...cells,String(hits),String(total),`${pct}%`]);
+  });
+  const csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'}));
+  a.download=`historial_combate_ronda${round}.csv`;a.click();URL.revokeObjectURL(a.href);
+}
+
+resetPlayerRows();
+initDefChecks();
+renderSB();
+document.getElementById('aov')?.classList.remove('show');
+document.getElementById('mov').addEventListener('click',e=>{if(e.target.id==='mov')closeM();});
+document.getElementById('tov').addEventListener('click',e=>{if(e.target.id==='tov')closeTM();});
+document.getElementById('sov').addEventListener('click',e=>{if(e.target.id==='sov')closeSM();});
+document.getElementById('hov').addEventListener('click',e=>{if(e.target.id==='hov')closeHistorial();});
+document.getElementById('dtov').addEventListener('click',e=>{if(e.target.id==='dtov')closeDTOV();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeM();closeTM();closeSM();closeHistorial();closeDTOV();}});
+
+// ── SISTEMA DE GUARDADO DE ENCUENTROS ────────────────────────────────────────
+let currentSaveId = null;
+
+function openSM(){
+  cargarSaves();
+  const banner = document.getElementById('save-cur-banner');
+  if(currentSaveId){
+    document.getElementById('save-cur-label').textContent = `● ${document.getElementById('save-name-in').value || 'Encuentro cargado'}`;
+    banner.style.display = '';
+  } else {
+    banner.style.display = 'none';
+  }
+  document.getElementById('sov').classList.add('show');
+}
+function closeSM(){ document.getElementById('sov').classList.remove('show'); }
+
+function apiToken(){
+  try { const u=localStorage.getItem('usuario'); return u ? JSON.parse(u).token : null; } catch{ return null; }
+}
+
+function cargarSaves(){
+  const body = document.getElementById('saves-body');
+  if(!localStorage.getItem('usuario')){ body.innerHTML = '<div class="saves-empty">Inicia sesión en el panel principal<br>para guardar encuentros.</div>'; return; }
+  body.innerHTML = '<div class="saves-empty">Cargando…</div>';
+  fetch('/api/combates', { credentials:'include' })
+    .then(r => r.ok ? r.json() : Promise.reject(r.status))
+    .then(renderSaves)
+    .catch(e => { body.innerHTML = `<div class="saves-empty">${e===401?'Sesión expirada. Recarga la página.':'Error al cargar los guardados.'}</div>`; });
+}
+
+function renderSaves(saves){
+  const body = document.getElementById('saves-body');
+  if(!saves.length){ body.innerHTML = '<div class="saves-empty">Aún no tienes encuentros guardados.<br>Escribe un nombre arriba y pulsa <b>Guardar nuevo</b>.</div>'; return; }
+  body.innerHTML = saves.map(s => {
+    const d = new Date(s.updatedAt).toLocaleString('es-ES',{dateStyle:'short',timeStyle:'short'});
+    const isCur = s.id === currentSaveId;
+    return `<div class="save-row ${isCur?'cur-save':''}">
+      <div class="save-row-info">
+        <div class="save-row-name">${escH(s.nombre)}${isCur?' <span style="color:var(--ju);font-size:9px;font-weight:400">● cargado</span>':''}</div>
+        <div class="save-row-meta">Guardado: ${d}</div>
+      </div>
+      <button class="btn btn-s btn-sm" onclick="cargarCombate(${s.id},'${escH(s.nombre).replace(/'/g,'\\\'')}')" style="flex-shrink:0">Cargar</button>
+      <button class="btn btn-d btn-sm" onclick="eliminarSave(${s.id})" style="flex-shrink:0">✕</button>
+    </div>`;
+  }).join('');
+}
+
+function getCombateState(){
+  return {
+    creatures: creatures.map(c => ({...c})),
+    combatOrderIds: combatOrder.map(c => c.id),
+    turnIndex, round, inCombat, combatLog,
+  };
+}
+
+function guardarNuevo(){
+  if(!localStorage.getItem('usuario')){ alert('Inicia sesión para guardar.'); return; }
+  const nombre = document.getElementById('save-name-in').value.trim();
+  if(!nombre){ document.getElementById('save-name-in').focus(); return; }
+  fetch('/api/combates', {
+    method:'POST',
+    credentials:'include',
+    headers:{ 'Content-Type':'application/json' },
+    body: JSON.stringify({ nombre, datos: getCombateState() }),
+  })
+    .then(r => r.ok ? r.json() : Promise.reject())
+    .then(save => {
+      currentSaveId = save.id;
+      document.getElementById('save-name-in').value = save.nombre;
+      document.getElementById('save-cur-label').textContent = `● ${save.nombre}`;
+      document.getElementById('save-cur-banner').style.display = '';
+      cargarSaves();
+      showToast(`"${save.nombre}" guardado`);
+    })
+    .catch(() => alert('Error al guardar el encuentro.'));
+}
+
+function actualizarSave(){
+  if(!currentSaveId){ guardarNuevo(); return; }
+  const nombre = document.getElementById('save-name-in').value.trim();
+  fetch(`/api/combates/${currentSaveId}`, {
+    method:'PUT',
+    credentials:'include',
+    headers:{ 'Content-Type':'application/json' },
+    body: JSON.stringify({ nombre: nombre||undefined, datos: getCombateState() }),
+  })
+    .then(r => r.ok ? r.json() : Promise.reject())
+    .then(save => {
+      document.getElementById('save-cur-label').textContent = `● ${save.nombre}`;
+      cargarSaves();
+      showToast(`"${save.nombre}" actualizado`);
+    })
+    .catch(() => alert('Error al actualizar el encuentro.'));
+}
+
+function cargarCombate(id, nombre){
+  fetch(`/api/combates/${id}`, { credentials:'include' })
+    .then(r => r.ok ? r.json() : Promise.reject())
+    .then(save => {
+      const s = save.datos;
+      creatures    = s.creatures || [];
+      turnIndex    = s.turnIndex ?? -1;
+      round        = s.round || 1;
+      inCombat     = s.inCombat || false;
+      combatLog    = s.combatLog || [];
+      combatOrder  = (s.combatOrderIds || []).map(oid => creatures.find(c => c.id === oid)).filter(Boolean);
+      currentSaveId = id;
+      document.getElementById('save-name-in').value = nombre;
+      document.getElementById('save-cur-label').textContent = `● ${nombre}`;
+      document.getElementById('save-cur-banner').style.display = '';
+      document.getElementById('btn-start').style.display = inCombat ? 'none' : '';
+      closeSM();
+      renderSB(); renderC(); renderLog();
+      switchTab('combat');
+      showToast(`"${nombre}" cargado`);
+    })
+    .catch(() => alert('Error al cargar el encuentro.'));
+}
+
+function eliminarSave(id){
+  if(!confirm('¿Eliminar este encuentro guardado?')) return;
+  fetch(`/api/combates/${id}`, { method:'DELETE', credentials:'include' })
+    .then(r => r.ok ? r.json() : Promise.reject())
+    .then(() => {
+      if(currentSaveId === id){
+        currentSaveId = null;
+        document.getElementById('save-cur-banner').style.display = 'none';
+      }
+      cargarSaves();
+    })
+    .catch(() => alert('Error al eliminar.'));
+}
+
+function showToast(msg){
+  const n = document.createElement('div');
+  n.style.cssText = 'position:fixed;top:12px;right:12px;background:var(--gold);color:#1a1a2e;padding:8px 14px;border-radius:6px;font-size:12px;font-weight:700;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,.5);pointer-events:none;';
+  n.textContent = msg;
+  document.body.appendChild(n);
+  setTimeout(() => n.remove(), 2500);
+}
+function showLockedToast(el){
+  const req=el.dataset.reqname||el.title||'otra acción';
+  showToast(`🔒 Requiere que "${req}" impacte primero`);
+}
+
+// Integración con Fichas de PNJ: leer criaturas pendientes desde localStorage
+(function importarDesdePnj(){
+  try{
+    const raw=localStorage.getItem('combate_nuevas_criaturas');
+    if(!raw)return;
+    const lista=JSON.parse(raw);
+    if(!Array.isArray(lista)||!lista.length)return;
+    localStorage.removeItem('combate_nuevas_criaturas');
+    lista.forEach(pnj=>{
+      const dexMod=Math.floor(((pnj.destreza||10)-10)/2);
+      const initMod=pnj.iniciativa!=null?pnj.iniciativa:dexMod;
+      const c={
+        id:uid(),
+        name:pnj.nombre||'PNJ',
+        type:pnj.tipo||'Humanoide',
+        tamanio:pnj.tamano||'Mediano',
+        faction:pnj.faccion||'enemigo',
+        hp:pnj.hp||10,
+        maxHp:pnj.maxHp||10,
+        ac:pnj.ac||10,
+        initMod:initMod,
+        initFixed:0,
+        rolledInit:0,
+        hasTurned:false,
+        afectados:{},
+        recargas:{},
+        reaccion_usada:false,
+        auras:[],
+        ...parseNpcDefs(pnj),
+        actions:(pnj.acciones||[]).map(a=>{
+          if(a.tipo==='multiataque')return{tipo:'multiataque',name:a.nombre||a.name||'Multiataque',descripcion:a.descripcion||'',combinaciones:a.combinaciones||[]};
+          return{name:a.nombre||a.name||'Ataque',type:'ataque',multiataque:!!a.multiataque,attackBonus:Math.floor(((pnj.fuerza||10)-10)/2),damageEntries:[{dice:'1d6',bonus:0,label:'',ignoresResistance:false}],tiene_limite:!!a.tiene_limite,max_criaturas:a.max_criaturas||1,estado_aplicado:a.estado_aplicado||'',recarga:a.recarga||null};
+        })
+      };
+      if(inCombat){insertMidCombat(c);}
+      else{creatures.push(c);}
+    });
+    if(!inCombat){renderSB();}
+    const n=document.createElement('div');
+    n.style.cssText='position:fixed;top:12px;right:12px;background:var(--gold);color:#1a1a2e;padding:8px 14px;border-radius:6px;font-size:12px;font-weight:700;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,.5);';
+    n.textContent=`${lista.length} PNJ${lista.length>1?'s':''} añadido${lista.length>1?'s':''} al combate`;
+    document.body.appendChild(n);
+    setTimeout(()=>n.remove(),3000);
+  }catch(e){console.warn('combate_nuevas_criaturas parse error',e);}
+})();
+</script>
+</body>
+</html>
