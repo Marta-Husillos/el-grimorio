@@ -15,7 +15,7 @@ services:
       retries: 5
 
   backend:
-    build: ./bankend
+    build: ./backend
     ports:
       - "127.0.0.1:5000:5000"
     environment:
@@ -31,7 +31,7 @@ services:
       EMAIL_PASS: ${EMAIL_PASS}
       FRONTEND_URL: ${FRONTEND_URL}
     volumes:
-      - ./bankend/public/avatars:/app/public/avatars
+      - ./backend/public/avatars:/app/public/avatars
     depends_on:
       db:
         condition: service_healthy

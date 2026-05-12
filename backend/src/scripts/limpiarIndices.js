@@ -1,5 +1,5 @@
 // Ejecutar UNA VEZ antes de arrancar Docker para limpiar índices acumulados:
-//   node bankend/src/scripts/limpiarIndices.js
+//   node backend/src/scripts/limpiarIndices.js
 require('dotenv').config({ path: require('path').resolve(__dirname, '../../.env') });
 
 const { sequelize } = require('../config/db');

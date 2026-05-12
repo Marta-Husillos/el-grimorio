@@ -16,7 +16,7 @@ build/
 .DS_Store
 
 # Avatares subidos por usuarios (contenido en tiempo de ejecución)
-bankend/public/avatars/
+backend/public/avatars/
 
 # Imagen original del libro (la copia en public/ es la que usa el build)
 frontend/libro.png
