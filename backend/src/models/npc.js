@@ -42,12 +42,12 @@ Npc.init(
     puntos_de_golpe: { type: DataTypes.INTEGER, defaultValue: 10 },
     velocidad:       { type: DataTypes.STRING,  defaultValue: '9 m' },
     // Características
-    fuerza:       { type: DataTypes.INTEGER, defaultValue: 10 },
-    destreza:     { type: DataTypes.INTEGER, defaultValue: 10 },
-    constitucion: { type: DataTypes.INTEGER, defaultValue: 10 },
-    inteligencia: { type: DataTypes.INTEGER, defaultValue: 10 },
-    sabiduria:    { type: DataTypes.INTEGER, defaultValue: 10 },
-    carisma:      { type: DataTypes.INTEGER, defaultValue: 10 },
+    fuerza:       { type: DataTypes.INTEGER, defaultValue: 10, validate: { min: 1, max: 30, isInt: true } },
+    destreza:     { type: DataTypes.INTEGER, defaultValue: 10, validate: { min: 1, max: 30, isInt: true } },
+    constitucion: { type: DataTypes.INTEGER, defaultValue: 10, validate: { min: 1, max: 30, isInt: true } },
+    inteligencia: { type: DataTypes.INTEGER, defaultValue: 10, validate: { min: 1, max: 30, isInt: true } },
+    sabiduria:    { type: DataTypes.INTEGER, defaultValue: 10, validate: { min: 1, max: 30, isInt: true } },
+    carisma:      { type: DataTypes.INTEGER, defaultValue: 10, validate: { min: 1, max: 30, isInt: true } },
     favorito:     { type: DataTypes.BOOLEAN, defaultValue: false },
     // Iniciativa y tiradas de salvación (JSON: { fue, des, con, int, sab, car })
     iniciativa:  { type: DataTypes.STRING, allowNull: true },

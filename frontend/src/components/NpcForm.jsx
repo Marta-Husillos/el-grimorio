@@ -1048,9 +1048,9 @@ function NpcForm({ initialData = {}, onSubmit, loading }) {
                 return (
                   <div key={key} className="text-center">
                     <label className="label-dnd" style={{ fontSize: '0.65rem' }}>{full}</label>
-                    <input type="number" min={1} max={30} value={form[key]}
+                    <input type="number" min={1} max={30} step={1} value={form[key]}
                       onKeyDown={(e) => {
-                        if (['-', 'e', 'E', '+'].includes(e.key)) e.preventDefault();
+                        if (['-', 'e', 'E', '+', '.', ','].includes(e.key)) e.preventDefault();
                       }}
                       onChange={(e) => {
                         const n = parseInt(e.target.value);
