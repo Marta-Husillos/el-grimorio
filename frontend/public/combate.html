@@ -1231,6 +1231,7 @@ function startCombat(){
   round=1;inCombat=true;
   document.getElementById('btn-start').style.display='none';
   renderSB();renderC();switchTab('combat');showInitRolls(rolls);
+  disparaAutosave();
 }
 
 function insertMidCombat(c){
@@ -1244,6 +1245,7 @@ function insertMidCombat(c){
   combatOrder.splice(ins,0,c);
   if(ins<=turnIndex)turnIndex++;
   renderSB();renderC();renderLog();
+  disparaAutosave();
 }
 
 function showInitRolls(rolls){
@@ -1298,6 +1300,7 @@ function advTurn(){
       }
     });
   }
+  disparaAutosave();
 }
 
 function resetCombat(){
@@ -1307,6 +1310,7 @@ function resetCombat(){
   creatures.forEach(c=>{c.hp=c.maxHp;c.hasTurned=false;c.concentracion=null;c.recargas={};c.reaccion_usada=false;});
   document.getElementById('btn-start').style.display='';
   renderSB();renderC();renderLog();
+  limpiarAutosave('reset de combate');
 }
 
 function renderC(){
@@ -1686,6 +1690,7 @@ function mutAfect(cid,ai,delta){
   combatLog.push({cname:c.name,faction:c.faction,aname:a.name,round,
     afect:{estado:a.estado_aplicado||'Afectada',prev:cur,next,max,delta}});
   renderC();renderLog();
+  disparaAutosave();
 }
 
 // ROLL
@@ -1848,6 +1853,7 @@ function mutHp(id,delta){
   if(actualDmg>0&&c.concentracion)showConSavePrompt(id,actualDmg);
   renderSB();renderC();
   if(delta<0&&c.hp<=0)checkVictory();
+  disparaAutosave();
 }
 
 function applyHpInput(id,inputEl,isDmg){
@@ -1874,6 +1880,7 @@ function _applyHeal(id,val){
   const diff=c.hp-oldHp;
   combatLog.push({cname:c.name,faction:c.faction,quickHp:{isDmg:false,amount:val,actual:diff,hpAfter:c.hp,maxHp:c.maxHp,killed:null,dmgType:null,modifier:null}});
   renderSB();renderC();renderLog();
+  disparaAutosave();
 }
 
 function updateDtoPreview(){
@@ -1942,6 +1949,7 @@ function confirmDmgType(){
   const label=DMG_LABELS[type]||type;
   combatLog.push({cname:c.name,faction:c.faction,quickHp:{isDmg:true,amount:amt,actual:actualDmg,hpAfter:c.hp,maxHp:c.maxHp,killed,dmgType:label,modifier}});
   renderSB();renderC();renderLog();checkVictory();
+  disparaAutosave();
 }
 
 function closeDTOV(){
@@ -2076,8 +2084,8 @@ function checkVictory(){
   const heroesAlive=heroes.some(c=>!isD(c));
   const enemiesAlive=enemies.some(c=>!isD(c));
   const vov=document.getElementById('vov');
-  if(allEnemiesDead&&heroesAlive){showVictory('heroes');}
-  else if(allHeroesDead&&enemiesAlive){showVictory('enemies');}
+  if(allEnemiesDead&&heroesAlive){showVictory('heroes');limpiarAutosave('victoria');}
+  else if(allHeroesDead&&enemiesAlive){showVictory('enemies');limpiarAutosave('derrota');}
   else{if(vov.classList.contains('show'))vov.classList.remove('show');}
 }
 
@@ -2149,6 +2157,7 @@ function resetCombate(){
   editId=null;formF='enemigo';
   const bs=document.getElementById('btn-start');if(bs)bs.style.display='';
   clearF();switchTab('combat');renderSB();renderC();renderLog();
+  limpiarAutosave('reset total');
 }
 
 function vovHistorial(){
@@ -2801,6 +2810,82 @@ function renderSaves(saves){
   }).join('');
 }
 
+// ── AUTOSAVE A LOCALSTORAGE ────────────────────────────────────────────────
+// Estrategia: debounce de 3s tras cada mutación + intervalo de seguridad
+// de 30s. La clave es por usuario (combate_autosave_<id>) para no mezclar
+// sesiones distintas en el mismo navegador. Se LIMPIA al guardar manualmente,
+// resetear, cargar otro save, o al confirmar victoria/derrota.
+//
+// La restauración (UI de banner "Tienes un combate sin guardar, ¿restaurar?")
+// NO está implementada todavía — se hará en una iteración posterior usando
+// `leerAutosave()`.
+
+const AUTOSAVE_LIMIT_BYTES = 2 * 1024 * 1024; // 2 MB
+let autosaveTimerId = null;
+let autosaveIntervalId = null;
+
+function getUsuarioId(){
+  try {
+    const u = localStorage.getItem('usuario');
+    return u ? (JSON.parse(u).id ?? null) : null;
+  } catch { return null; }
+}
+
+function autosaveKey(){
+  const id = getUsuarioId();
+  return id != null ? `combate_autosave_${id}` : null;
+}
+
+function escribirAutosave(){
+  const key = autosaveKey();
+  if (!key) return;
+  if (!creatures.length){
+    console.log('[Autosave] Saltado: combate vacío');
+    return;
+  }
+  let json;
+  try {
+    json = JSON.stringify(getCombateState());
+  } catch (e){
+    console.warn('[Autosave] Error de serialización:', e.message);
+    return;
+  }
+  const size = json.length;
+  if (size > AUTOSAVE_LIMIT_BYTES){
+    console.warn(`[Autosave] Combate demasiado grande para autosave (${(size/1024/1024).toFixed(2)} MB), descartando.`);
+    return;
+  }
+  try {
+    localStorage.setItem(key, json);
+    console.log(`[Autosave] Escrito a localStorage (${(size/1024).toFixed(1)} KB)`);
+  } catch (e){
+    console.warn('[Autosave] Error:', e.name || e.message);
+  }
+}
+
+function limpiarAutosave(motivo){
+  const key = autosaveKey();
+  if (!key) return;
+  localStorage.removeItem(key);
+  console.log(`[Autosave] Limpiado${motivo ? ` (motivo: ${motivo})` : ''}`);
+}
+
+function leerAutosave(){
+  const key = autosaveKey();
+  if (!key) return null;
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+
+function disparaAutosave(){
+  if (autosaveTimerId !== null) clearTimeout(autosaveTimerId);
+  autosaveTimerId = setTimeout(escribirAutosave, 3000);
+}
+
+autosaveIntervalId = setInterval(escribirAutosave, 30000);
+
 /**
  * Serializa el estado del combate para persistir en BD.
  *
@@ -2837,6 +2922,7 @@ function guardarNuevo(){
       document.getElementById('save-cur-label').textContent = `● ${save.nombre}`;
       document.getElementById('save-cur-banner').style.display = '';
       cargarSaves();
+      limpiarAutosave('guardado manual');
       showToast(`"${save.nombre}" guardado`);
     })
     .catch(() => alert('Error al guardar el encuentro.'));
@@ -2855,6 +2941,7 @@ function actualizarSave(){
     .then(save => {
       document.getElementById('save-cur-label').textContent = `● ${save.nombre}`;
       cargarSaves();
+      limpiarAutosave('sobrescritura manual');
       showToast(`"${save.nombre}" actualizado`);
     })
     .catch(() => alert('Error al actualizar el encuentro.'));
@@ -2914,6 +3001,10 @@ function cargarCombate(id, nombre){
       closeSM();
       renderSB(); renderC(); renderLog();
       switchTab('combat');
+      // Solo limpiamos el autosave del combate anterior una vez que la
+      // reconstrucción del nuevo estado ha terminado sin lanzar — si el
+      // .then peta a mitad, el autosave previo queda intacto.
+      limpiarAutosave('carga de otro save');
       showToast(`"${nombre}" cargado`);
     })
     .catch(() => alert('Error al cargar el encuentro.'));
