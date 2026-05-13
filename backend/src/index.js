@@ -27,6 +27,10 @@ const { inicializarCache } = require('./services/cacheMonstruos');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// Necesario detrás de reverse proxy (nginx) para que express-rate-limit
+// vea la IP real del cliente en X-Forwarded-For en lugar de la del proxy.
+app.set('trust proxy', 1);
+
 connectDB().then(() => {
   inicializarCache().catch((err) => console.error('[Cache] Error al inicializar:', err));
 });
