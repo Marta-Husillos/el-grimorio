@@ -2801,8 +2801,19 @@ function renderSaves(saves){
   }).join('');
 }
 
+/**
+ * Serializa el estado del combate para persistir en BD.
+ *
+ * El campo `version` permite evolucionar el formato del JSON sin romper
+ * saves antiguos. Si en el futuro cambias la forma de `creatures`,
+ * `combatLog` o cualquier otro campo:
+ *   1) Incrementa `version` aquí (1 → 2, 2 → 3, ...).
+ *   2) Añade un bloque correspondiente en `migrateCombateData()` para
+ *      migrar saves de la versión anterior al nuevo formato.
+ */
 function getCombateState(){
   return {
+    version: 1,
     creatures: creatures.map(c => ({...c})),
     combatOrderIds: combatOrder.map(c => c.id),
     turnIndex, round, inCombat, combatLog,
@@ -2849,11 +2860,46 @@ function actualizarSave(){
     .catch(() => alert('Error al actualizar el encuentro.'));
 }
 
+/**
+ * Migra los datos de un combate guardado al formato de la versión actual.
+ *
+ * Sistema de versionado del estado persistido. Cada `datos` guardado lleva
+ * un campo `version`. Los saves antiguos previos a la introducción del
+ * versionado (sin campo `version`) se tratan como versión 0.
+ *
+ * IMPORTANTE: si en el futuro cambias el formato (añadir/quitar campos a
+ * `creature`, cambiar la forma del `combatLog`, etc.):
+ *   1) Incrementa la versión devuelta por `getCombateState()`.
+ *   2) Añade aquí un nuevo bloque `if (datos.version === N)` que transforme
+ *      del formato N al N+1 (ej: añadir campo nuevo con valor por defecto,
+ *      renombrar propiedad, dividir array, etc.) y ajusta `datos.version`.
+ *
+ * La función es idempotente: migrateCombateData(migrateCombateData(x))
+ * devuelve un resultado equivalente a migrateCombateData(x).
+ */
+function migrateCombateData(datos){
+  if (!datos || typeof datos !== 'object') return datos;
+  if (datos.version === undefined){
+    // Versión 0 (legacy): los campos del schema actual coinciden con los
+    // del schema previo, así que sólo hace falta etiquetar la versión.
+    datos.version = 1;
+    return datos;
+  }
+  if (datos.version === 1){
+    return datos;
+  }
+  if (datos.version > 1){
+    console.warn(`Combate guardado en versión ${datos.version}, esta app soporta hasta versión 1. Puede no cargar correctamente.`);
+    return datos;
+  }
+  return datos;
+}
+
 function cargarCombate(id, nombre){
   fetch(`/api/combates/${id}`, { credentials:'include' })
     .then(r => r.ok ? r.json() : Promise.reject())
     .then(save => {
-      const s = save.datos;
+      const s = migrateCombateData(save.datos);
       creatures    = s.creatures || [];
       turnIndex    = s.turnIndex ?? -1;
       round        = s.round || 1;
