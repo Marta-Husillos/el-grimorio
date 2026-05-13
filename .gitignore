@@ -15,6 +15,9 @@ build/
 *.log
 .DS_Store
 
+# Backups y dumps de base de datos (contienen datos reales y hashes de contraseñas)
+*.sql
+
 # Avatares subidos por usuarios (contenido en tiempo de ejecución)
 backend/public/avatars/
 

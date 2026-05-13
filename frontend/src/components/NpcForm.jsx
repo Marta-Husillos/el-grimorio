@@ -242,7 +242,7 @@ function SentidosEditor({ value, onChange }) {
 
 const DEFAULT_FORM = {
   nombre: '', tamano: 'Mediano', tipo: '', alineamiento: '', descripcion: '',
-  tipo_armadura: 'sin_armadura', clase_armadura: 10, otro_armadura_desc: '',
+  tipo_armadura: 'sin_armadura', clase_armadura: 10, clase_armadura_manual: false, otro_armadura_desc: '',
   iniciativa: '', num_dados: '', puntos_de_golpe: 10, velocidad: '9 m',
   fuerza: 10, destreza: 10, constitucion: 10, inteligencia: 10, sabiduria: 10, carisma: 10,
   salvaciones: { ...DEFAULT_SALVACIONES },
@@ -773,11 +773,12 @@ function NpcForm({ initialData = {}, onSubmit, loading }) {
       caInitializedRef.current = true;
       return;
     }
+    if (form.clase_armadura_manual) return; // override manual: no recalcular
     const tipo = TIPOS_ARMADURA.find((t) => t.key === form.tipo_armadura);
-    if (!tipo || tipo.calcCA === null) return; // 'natural' = manual
+    if (!tipo || tipo.calcCA === null) return; // 'natural' / 'otro' = manual
     const desMod = modNum(form.destreza);
     setForm((prev) => ({ ...prev, clase_armadura: tipo.calcCA(desMod) }));
-  }, [form.tipo_armadura, form.destreza]);
+  }, [form.tipo_armadura, form.destreza, form.clase_armadura_manual]);
 
   // ── Auto-cálculo 4: Tiradas de Salvación ─────────────────────────────────────
   useEffect(() => {
@@ -997,7 +998,16 @@ function NpcForm({ initialData = {}, onSubmit, loading }) {
           <CollapseSection title="Combate">
             {/* Tipo armadura */}
             <Field label="Tipo de armadura">
-              <select name="tipo_armadura" value={form.tipo_armadura} onChange={handleChange} className="input-dnd">
+              <select
+                name="tipo_armadura"
+                value={form.tipo_armadura}
+                onChange={(e) => setForm((prev) => ({
+                  ...prev,
+                  tipo_armadura: e.target.value,
+                  clase_armadura_manual: false, // volver a cálculo automático
+                }))}
+                className="input-dnd"
+              >
                 {TIPOS_ARMADURA.map((t) => <option key={t.key} value={t.key}>{t.label}</option>)}
               </select>
               {form.tipo_armadura === 'otro' && (
@@ -1015,7 +1025,33 @@ function NpcForm({ initialData = {}, onSubmit, loading }) {
 
             {/* CA */}
             <Field label="Clase de Armadura">
-              <input type="number" name="clase_armadura" min={0} max={30} value={form.clase_armadura} onChange={handleChange} className="input-dnd text-center" />
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  name="clase_armadura"
+                  min={0}
+                  max={30}
+                  value={form.clase_armadura}
+                  onChange={(e) => setForm((prev) => ({
+                    ...prev,
+                    clase_armadura: e.target.value === '' ? '' : Number(e.target.value),
+                    clase_armadura_manual: true, // marcar como override manual
+                  }))}
+                  className="input-dnd text-center"
+                />
+                {form.clase_armadura_manual && (
+                  <>
+                    <span className="text-xs text-amber-600 font-semibold">✏️ Manual</span>
+                    <button
+                      type="button"
+                      onClick={() => setForm((prev) => ({ ...prev, clase_armadura_manual: false }))}
+                      className="text-xs text-gold hover:underline"
+                    >
+                      ↻ Volver a cálculo automático
+                    </button>
+                  </>
+                )}
+              </div>
             </Field>
 
             {/* PG con calculadora de dados */}

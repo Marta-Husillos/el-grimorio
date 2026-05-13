@@ -38,6 +38,7 @@ Npc.init(
     // Combate
     tipo_armadura:   { type: DataTypes.STRING,  defaultValue: 'sin_armadura' },
     clase_armadura:  { type: DataTypes.INTEGER, defaultValue: 10 },
+    clase_armadura_manual: { type: DataTypes.BOOLEAN, defaultValue: false, allowNull: false },
     num_dados:       { type: DataTypes.INTEGER, allowNull: true },
     puntos_de_golpe: { type: DataTypes.INTEGER, defaultValue: 10 },
     velocidad:       { type: DataTypes.STRING,  defaultValue: '9 m' },

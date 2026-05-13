@@ -23,6 +23,7 @@ const combateRoutes  = require('./routes/combateRoutes');
 const perfilRoutes   = require('./routes/perfil');
 const errorHandler        = require('./middleware/errorHandler');
 const { inicializarCache } = require('./services/cacheMonstruos');
+const backfillAcManual     = require('./scripts/backfillAcManual');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -33,6 +34,7 @@ app.set('trust proxy', 1);
 
 connectDB().then(() => {
   inicializarCache().catch((err) => console.error('[Cache] Error al inicializar:', err));
+  backfillAcManual().catch((err) => console.error('[Backfill AC] Error:', err));
 });
 
 app.use(helmet());

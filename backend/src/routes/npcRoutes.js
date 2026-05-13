@@ -12,6 +12,7 @@ const validarNpc = [
   body('nombre').optional().isString().isLength({ max: 255 }).withMessage('El nombre no puede superar 255 caracteres.'),
   body('puntos_de_golpe').optional().isInt({ min: 1, max: 9999 }).withMessage('Los PG deben estar entre 1 y 9999.'),
   body('clase_armadura').optional().isInt({ min: 0, max: 99 }).withMessage('La CA debe estar entre 0 y 99.'),
+  body('clase_armadura_manual').optional().isBoolean().withMessage('clase_armadura_manual debe ser booleano.').toBoolean(),
   body('fuerza').optional().isInt({ min: 1, max: 30 }).withMessage('Los atributos deben estar entre 1 y 30.'),
   body('destreza').optional().isInt({ min: 1, max: 30 }),
   body('constitucion').optional().isInt({ min: 1, max: 30 }),
