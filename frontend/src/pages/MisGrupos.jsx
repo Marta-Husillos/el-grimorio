@@ -299,6 +299,9 @@ export default function MisGrupos() {
       <div className="flex items-center justify-between mb-3">
         <h1 className="font-cinzel text-2xl font-bold text-gold">Mis Grupos</h1>
         <div className="flex gap-3">
+          <button onClick={() => window.dispatchEvent(new CustomEvent('open-import-modal'))} className="btn-gold py-2 px-4 text-sm">
+            📥 Importar de API
+          </button>
           <button onClick={() => { setMostrarUnirse(true); setMostrarCrear(false); setError(''); }} className="btn-gold py-2 px-4 text-sm">
             Unirse con código
           </button>
