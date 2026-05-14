@@ -1232,6 +1232,7 @@ function startCombat(){
   document.getElementById('btn-start').style.display='none';
   renderSB();renderC();switchTab('combat');showInitRolls(rolls);
   disparaAutosave();
+  disparaAutosaveServidor();
 }
 
 function insertMidCombat(c){
@@ -1246,6 +1247,7 @@ function insertMidCombat(c){
   if(ins<=turnIndex)turnIndex++;
   renderSB();renderC();renderLog();
   disparaAutosave();
+  disparaAutosaveServidor();
 }
 
 function showInitRolls(rolls){
@@ -1301,6 +1303,7 @@ function advTurn(){
     });
   }
   disparaAutosave();
+  disparaAutosaveServidor();
 }
 
 function resetCombat(){
@@ -1691,6 +1694,7 @@ function mutAfect(cid,ai,delta){
     afect:{estado:a.estado_aplicado||'Afectada',prev:cur,next,max,delta}});
   renderC();renderLog();
   disparaAutosave();
+  disparaAutosaveServidor();
 }
 
 // ROLL
@@ -1854,6 +1858,7 @@ function mutHp(id,delta){
   renderSB();renderC();
   if(delta<0&&c.hp<=0)checkVictory();
   disparaAutosave();
+  disparaAutosaveServidor();
 }
 
 function applyHpInput(id,inputEl,isDmg){
@@ -1881,6 +1886,7 @@ function _applyHeal(id,val){
   combatLog.push({cname:c.name,faction:c.faction,quickHp:{isDmg:false,amount:val,actual:diff,hpAfter:c.hp,maxHp:c.maxHp,killed:null,dmgType:null,modifier:null}});
   renderSB();renderC();renderLog();
   disparaAutosave();
+  disparaAutosaveServidor();
 }
 
 function updateDtoPreview(){
@@ -1950,6 +1956,7 @@ function confirmDmgType(){
   combatLog.push({cname:c.name,faction:c.faction,quickHp:{isDmg:true,amount:amt,actual:actualDmg,hpAfter:c.hp,maxHp:c.maxHp,killed,dmgType:label,modifier}});
   renderSB();renderC();renderLog();checkVictory();
   disparaAutosave();
+  disparaAutosaveServidor();
 }
 
 function closeDTOV(){
@@ -2823,6 +2830,9 @@ function renderSaves(saves){
 const AUTOSAVE_LIMIT_BYTES = 2 * 1024 * 1024; // 2 MB
 let autosaveTimerId = null;
 let autosaveIntervalId = null;
+let autosaveServerTimerId = null;
+let autosaveServerIntervalId = null;
+let autosaveServerEnProceso = false;  // evita PUT concurrentes
 
 function getUsuarioId(){
   try {
@@ -2884,7 +2894,44 @@ function disparaAutosave(){
   autosaveTimerId = setTimeout(escribirAutosave, 3000);
 }
 
+// ── Sincronización automática al servidor ──────────────────────────────────
+// Solo cuando el combate ya tiene save en BD (currentSaveId !== null).
+// Debounce de 10s + intervalo de seguridad de 60s. Fallos silenciosos: solo
+// se loguea con prefijo [Autosave Server], nunca se interrumpe el juego ni se
+// muestra UI. El flag autosaveServerEnProceso evita PUT solapados.
+
+async function escribirAutosaveServidor(){
+  if (currentSaveId == null) return;
+  if (!creatures.length) return;
+  if (autosaveServerEnProceso) return;
+  autosaveServerEnProceso = true;
+  try {
+    const json = JSON.stringify({ datos: getCombateState() });
+    const r = await fetch(`/api/combates/${currentSaveId}`, {
+      method: 'PUT',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: json,
+    });
+    if (r.ok){
+      console.log(`[Autosave Server] Sincronizado (${(json.length/1024).toFixed(1)} KB)`);
+    } else {
+      console.warn(`[Autosave Server] Fallo de sincronización: ${r.status}`);
+    }
+  } catch (e){
+    console.warn(`[Autosave Server] Fallo de sincronización: ${e.message}`);
+  } finally {
+    autosaveServerEnProceso = false;
+  }
+}
+
+function disparaAutosaveServidor(){
+  if (autosaveServerTimerId !== null) clearTimeout(autosaveServerTimerId);
+  autosaveServerTimerId = setTimeout(escribirAutosaveServidor, 10000);
+}
+
 autosaveIntervalId = setInterval(escribirAutosave, 30000);
+autosaveServerIntervalId = setInterval(escribirAutosaveServidor, 60000);
 
 /**
  * Serializa el estado del combate para persistir en BD.

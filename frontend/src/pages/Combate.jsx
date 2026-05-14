@@ -1,7 +1,7 @@
 function Combate() {
   return (
     <iframe
-      src="/combate.html?v=10"
+      src="/combate.html?v=11"
       title="Gestor de Combate"
       style={{ width: '100%', height: 'calc(100vh - 57px)', border: 'none', display: 'block' }}
     />
