@@ -2933,6 +2933,10 @@ function disparaAutosaveServidor(){
 autosaveIntervalId = setInterval(escribirAutosave, 30000);
 autosaveServerIntervalId = setInterval(escribirAutosaveServidor, 60000);
 
+// Al cargar la página, comprobar si hay un autosave pendiente de un combate
+// anterior y, si lo hay, ofrecer restaurarlo mediante un modal.
+comprobarAutosavePendiente();
+
 /**
  * Serializa el estado del combate para persistir en BD.
  *
@@ -2945,7 +2949,8 @@ autosaveServerIntervalId = setInterval(escribirAutosaveServidor, 60000);
  */
 function getCombateState(){
   return {
-    version: 1,
+    version: 2,
+    savedAt: new Date().toISOString(),
     creatures: creatures.map(c => ({...c})),
     combatOrderIds: combatOrder.map(c => c.id),
     turnIndex, round, inCombat, combatLog,
@@ -3001,12 +3006,15 @@ function actualizarSave(){
  * un campo `version`. Los saves antiguos previos a la introducción del
  * versionado (sin campo `version`) se tratan como versión 0.
  *
+ * Las migraciones se aplican EN CASCADA: un save con version=undefined pasa
+ * por 0→1 y luego 1→2 en la misma llamada. Por eso los bloques son `if`
+ * independientes (no `else if`) y no hacen `return` temprano.
+ *
  * IMPORTANTE: si en el futuro cambias el formato (añadir/quitar campos a
  * `creature`, cambiar la forma del `combatLog`, etc.):
  *   1) Incrementa la versión devuelta por `getCombateState()`.
  *   2) Añade aquí un nuevo bloque `if (datos.version === N)` que transforme
- *      del formato N al N+1 (ej: añadir campo nuevo con valor por defecto,
- *      renombrar propiedad, dividir array, etc.) y ajusta `datos.version`.
+ *      del formato N al N+1 y ajuste `datos.version`.
  *
  * La función es idempotente: migrateCombateData(migrateCombateData(x))
  * devuelve un resultado equivalente a migrateCombateData(x).
@@ -3014,19 +3022,122 @@ function actualizarSave(){
 function migrateCombateData(datos){
   if (!datos || typeof datos !== 'object') return datos;
   if (datos.version === undefined){
-    // Versión 0 (legacy): los campos del schema actual coinciden con los
-    // del schema previo, así que sólo hace falta etiquetar la versión.
+    // Versión 0 (legacy): los campos coinciden con el schema v1, sólo
+    // hace falta etiquetar la versión.
     datos.version = 1;
-    return datos;
   }
   if (datos.version === 1){
-    return datos;
+    // 1 → 2: se añadió el campo `savedAt` (ISO string). Para saves antiguos
+    // usamos el `updatedAt` del backend si está disponible, o la hora actual
+    // como último recurso.
+    if (!datos.savedAt) datos.savedAt = datos.updatedAt || new Date().toISOString();
+    datos.version = 2;
   }
-  if (datos.version > 1){
-    console.warn(`Combate guardado en versión ${datos.version}, esta app soporta hasta versión 1. Puede no cargar correctamente.`);
-    return datos;
+  if (datos.version > 2){
+    console.warn(`Combate guardado en versión ${datos.version}, esta app soporta hasta versión 2. Puede no cargar correctamente.`);
   }
   return datos;
+}
+
+// ── UI DE RESTAURACIÓN DEL AUTOSAVE ────────────────────────────────────────
+// Al cargar la página, si hay un autosave en localStorage de un combate
+// anterior, se ofrece restaurarlo mediante un modal insertado dinámicamente.
+
+function formatearTiempoRelativo(isoString){
+  if (!isoString) return 'guardado hace un tiempo';
+  const t = new Date(isoString).getTime();
+  if (isNaN(t)) return 'guardado hace un tiempo';
+  const seg = Math.floor((Date.now() - t) / 1000);
+  if (seg < 60) return 'hace menos de un minuto';
+  const min = Math.floor(seg / 60);
+  if (min < 60) return `hace ${min} ${min === 1 ? 'minuto' : 'minutos'}`;
+  const h = Math.floor(min / 60);
+  if (h < 24) return `hace ${h} ${h === 1 ? 'hora' : 'horas'}`;
+  const d = Math.floor(h / 24);
+  return `hace ${d} ${d === 1 ? 'día' : 'días'}`;
+}
+
+function comprobarAutosavePendiente(){
+  // Si el usuario llega a /combate con criaturas pendientes de importar desde
+  // la app principal, su intención es montar un combate nuevo, no restaurar
+  // uno anterior. No mostramos el modal; el autosave queda intacto y volverá
+  // a ofrecerse la próxima vez que entre sin importación pendiente.
+  const pendientesImportar = localStorage.getItem('combate_nuevas_criaturas');
+  if (pendientesImportar){
+    let hayPendientes = false;
+    try {
+      const lista = JSON.parse(pendientesImportar);
+      hayPendientes = Array.isArray(lista) && lista.length > 0;
+    } catch { hayPendientes = false; }
+    if (hayPendientes){
+      console.log('[Autosave] Modal de restauración omitido: hay criaturas pendientes de importar');
+      return;
+    }
+  }
+  const snapshot = leerAutosave();
+  if (!snapshot) return;
+  if (!snapshot.creatures || snapshot.creatures.length === 0){
+    // Combate vacío: no merece la pena ofrecer restaurarlo, se limpia sin UI.
+    limpiarAutosave('autosave vacío descartado');
+    return;
+  }
+  mostrarModalRestauracion(snapshot);
+}
+
+function cerrarModalRestauracion(){
+  const ov = document.getElementById('autosave-restore-ov');
+  if (ov) ov.remove();
+}
+
+function mostrarModalRestauracion(snapshot){
+  // El modal se construye e inserta dinámicamente con appendChild — NO está
+  // hardcoded en el HTML. Se elimina del DOM al descartar o restaurar.
+  const ov = document.createElement('div');
+  ov.id = 'autosave-restore-ov';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:500;display:flex;align-items:center;justify-content:center;';
+  const nCriaturas = snapshot.creatures.length;
+  const ronda = snapshot.round || 1;
+  const cuando = formatearTiempoRelativo(snapshot.savedAt);
+  ov.innerHTML = `
+    <div class="dtbox" style="width:340px;">
+      <div class="dtbox-hdr"><span>🛡️ Combate sin guardar</span></div>
+      <div style="font-size:12px;color:var(--tx);line-height:1.6;">
+        Detecté un combate guardado automáticamente en este navegador.
+        <div style="margin:10px 0;padding:8px 10px;background:var(--bg);border:1px solid var(--brd);border-radius:6px;">
+          • Criaturas: <b>${nCriaturas}</b><br>
+          • Ronda: <b>${ronda}</b><br>
+          • Guardado: <b>${cuando}</b>
+        </div>
+        ¿Quieres restaurar este combate o descartarlo?
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-s" id="autosave-descartar-btn" style="flex:1;">Descartar</button>
+        <button class="btn btn-p" id="autosave-restaurar-btn" style="flex:1;">Restaurar</button>
+      </div>
+    </div>`;
+  document.body.appendChild(ov);
+  document.getElementById('autosave-descartar-btn').addEventListener('click', descartarAutosave);
+  document.getElementById('autosave-restaurar-btn').addEventListener('click', () => restaurarAutosave(snapshot));
+}
+
+function descartarAutosave(){
+  limpiarAutosave('descartado por usuario');
+  cerrarModalRestauracion();
+}
+
+function restaurarAutosave(snapshot){
+  creatures   = snapshot.creatures || [];
+  combatOrder = (snapshot.combatOrderIds || []).map(oid => creatures.find(c => c.id === oid)).filter(Boolean);
+  turnIndex   = snapshot.turnIndex ?? -1;
+  round       = snapshot.round || 1;
+  inCombat    = snapshot.inCombat || false;
+  combatLog   = snapshot.combatLog || [];
+  // NO se asigna currentSaveId: el snapshot del autosave NO pertenece a
+  // ningún save de BD. El usuario decidirá si lo guarda con "Guardar nuevo".
+  renderSB(); renderC(); renderLog();
+  switchTab('combat');
+  limpiarAutosave('restaurado');
+  cerrarModalRestauracion();
 }
 
 function cargarCombate(id, nombre){
