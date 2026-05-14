@@ -21,6 +21,7 @@ export const apiPerfil = () => api.get('/auth/perfil');
 // ── Grupos ────────────────────────────────────────────────────────────────────
 export const getGrupos = (params = {}) => api.get('/grupos', { params });
 export const crearGrupo = (data) => api.post('/grupos', data);
+export const editarGrupo = (id, datos) => api.put(`/grupos/${id}`, datos);
 export const unirseGrupo = (codigo) => api.post('/grupos/unirse', { codigo });
 export const compartirFichaGrupo = (grupoId, npc_id) => api.post(`/grupos/${grupoId}/fichas`, { npc_id });
 export const quitarFichaGrupo = (grupoId, npc_id) => api.delete(`/grupos/${grupoId}/fichas/${npc_id}`);

@@ -1,7 +1,7 @@
 const router = require('express').Router();
 const auth = require('../middleware/auth');
 const {
-  crearGrupo, listarGrupos, unirse,
+  crearGrupo, listarGrupos, unirse, editarGrupo,
   listarMiembros, cambiarRol, expulsarMiembro,
   compartirFicha, fichasGrupo, quitarFicha, salir,
 } = require('../controllers/grupoController');
@@ -11,6 +11,7 @@ router.use(auth);
 router.get('/',          listarGrupos);
 router.post('/',         crearGrupo);
 router.post('/unirse',   unirse);
+router.put('/:id',       editarGrupo);
 
 router.get('/:id/miembros',                 listarMiembros);
 router.put('/:id/miembros/:usuario_id/rol', cambiarRol);

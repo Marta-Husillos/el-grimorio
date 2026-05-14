@@ -16,6 +16,12 @@ exports.crearGrupo = async (req, res) => {
   try {
     const { nombre, descripcion } = req.body;
     if (!nombre) return res.status(400).json({ error: 'El nombre es obligatorio' });
+    if (nombre.trim().length > 100) {
+      return res.status(400).json({ error: 'El nombre no puede superar los 100 caracteres' });
+    }
+    if (descripcion && descripcion.trim().length > 500) {
+      return res.status(400).json({ error: 'La descripción no puede superar los 500 caracteres' });
+    }
 
     const codigo_invitacion = crypto.randomBytes(4).toString('hex').toUpperCase();
     const grupo = await Grupo.create({
@@ -74,6 +80,41 @@ exports.unirse = async (req, res) => {
 
     await GrupoUsuario.create({ grupo_id: grupo.id, usuario_id: req.usuario.id, rol: 'espectador' });
     res.json({ ...grupo.toJSON(), rol: 'espectador' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// PUT /api/grupos/:id  — solo propietaria
+exports.editarGrupo = async (req, res) => {
+  try {
+    const grupoId = req.params.id;
+    const { nombre, descripcion } = req.body;
+
+    const solicitante = await getMembresiaConRol(grupoId, req.usuario.id);
+    if (!solicitante || solicitante.rol !== 'propietaria') {
+      return res.status(403).json({ error: 'Solo la propietaria puede editar el grupo' });
+    }
+
+    if (!nombre || !nombre.trim()) {
+      return res.status(400).json({ error: 'El nombre es obligatorio' });
+    }
+    if (nombre.trim().length > 100) {
+      return res.status(400).json({ error: 'El nombre no puede superar los 100 caracteres' });
+    }
+    if (descripcion && descripcion.trim().length > 500) {
+      return res.status(400).json({ error: 'La descripción no puede superar los 500 caracteres' });
+    }
+
+    const grupo = await Grupo.findByPk(grupoId);
+    if (!grupo) return res.status(404).json({ error: 'Grupo no encontrado' });
+
+    await grupo.update({
+      nombre: nombre.trim(),
+      descripcion: descripcion?.trim() || null,
+    });
+
+    res.json({ id: grupo.id, nombre: grupo.nombre, descripcion: grupo.descripcion, updatedAt: grupo.updatedAt });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  getGrupos, crearGrupo, unirseGrupo, getFichasGrupo, salirGrupo,
+  getGrupos, crearGrupo, editarGrupo, unirseGrupo, getFichasGrupo, salirGrupo,
   getMiembros, cambiarRolMiembro, expulsarMiembro as apiExpulsarMiembro,
 } from '../services/api';
 import StatBlock from '../components/StatBlock';
@@ -28,7 +28,7 @@ function RolBadge({ rol }) {
 
 // ── Vista de detalle de un grupo ──────────────────────────────────────────────
 
-function GrupoDetalle({ grupo, onVolver }) {
+function GrupoDetalle({ grupo, onVolver, editandoGrupo, setEditandoGrupo, formEditar, setFormEditar, errorEditar, setErrorEditar, handleEditar }) {
   const [fichas, setFichas]             = useState([]);
   const [miembros, setMiembros]         = useState([]);
   const [cargando, setCargando]         = useState(true);
@@ -85,7 +85,44 @@ function GrupoDetalle({ grupo, onVolver }) {
         </button>
         <h2 className="font-cinzel text-xl font-bold text-gold">{grupo.nombre}</h2>
         <RolBadge rol={grupo.rol} />
+        {esPropietaria && (
+          <button
+            onClick={() => {
+              setEditandoGrupo(grupo);
+              setFormEditar({ nombre: grupo.nombre, descripcion: grupo.descripcion || '' });
+              setErrorEditar('');
+            }}
+            className="text-gold/60 hover:text-gold transition font-cinzel text-sm"
+          >
+            ✏️ Editar grupo
+          </button>
+        )}
       </div>
+
+      {/* Panel de edición del grupo — solo propietaria */}
+      {editandoGrupo && editandoGrupo.id === grupo.id && (
+        <div className="mb-5 p-5 rounded-lg" style={{ background: 'rgba(201,168,76,0.06)', border: '1px solid rgba(201,168,76,0.3)' }}>
+          <h3 className="font-cinzel text-gold mb-4">Editar grupo</h3>
+          {errorEditar && <p className="text-red-300 text-sm font-baskerville mb-3">{errorEditar}</p>}
+          <form onSubmit={handleEditar} className="space-y-3">
+            <input
+              className="input-dnd w-full" placeholder="Nombre del grupo *" required maxLength={100}
+              value={formEditar.nombre} onChange={(e) => setFormEditar({ ...formEditar, nombre: e.target.value })}
+            />
+            <div>
+              <textarea
+                className="input-dnd w-full" placeholder="Descripción (opcional)" rows={3} maxLength={500}
+                value={formEditar.descripcion} onChange={(e) => setFormEditar({ ...formEditar, descripcion: e.target.value })}
+              />
+              <p className="text-gold/30 text-xs font-baskerville text-right mt-1">{formEditar.descripcion.length}/500</p>
+            </div>
+            <div className="flex gap-3">
+              <button type="submit" className="btn-gold py-2 px-5 text-sm">Guardar cambios</button>
+              <button type="button" onClick={() => { setEditandoGrupo(null); setErrorEditar(''); }} className="text-gold/50 hover:text-gold text-sm font-cinzel transition">Cancelar</button>
+            </div>
+          </form>
+        </div>
+      )}
 
       {/* Código de invitación — solo propietaria y editor */}
       {puedeVerCodigo && (
@@ -236,6 +273,10 @@ export default function MisGrupos() {
   const [error, setError]                 = useState('');
   const [exito, setExito]                 = useState('');
 
+  const [editandoGrupo, setEditandoGrupo] = useState(null);
+  const [formEditar, setFormEditar]       = useState({ nombre: '', descripcion: '' });
+  const [errorEditar, setErrorEditar]     = useState('');
+
   const cargarGrupos = () => {
     setCargando(true);
     getGrupos()
@@ -276,6 +317,33 @@ export default function MisGrupos() {
     }
   };
 
+  const handleEditar = async (e) => {
+    e.preventDefault();
+    setErrorEditar('');
+    const nombre = formEditar.nombre.trim();
+    const descripcion = formEditar.descripcion.trim();
+    if (!nombre) { setErrorEditar('El nombre es obligatorio'); return; }
+    if (nombre.length > 100) { setErrorEditar('El nombre no puede superar los 100 caracteres'); return; }
+    if (descripcion.length > 500) { setErrorEditar('La descripción no puede superar los 500 caracteres'); return; }
+    try {
+      const res = await editarGrupo(editandoGrupo.id, { nombre, descripcion });
+      // Refleja el cambio en la lista local sin necesidad de refetch
+      setGrupos((prev) => prev.map((g) =>
+        g.id === res.data.id ? { ...g, nombre: res.data.nombre, descripcion: res.data.descripcion } : g
+      ));
+      // Si el grupo editado es el que está abierto, refresca también su cabecera
+      if (grupoActivo && grupoActivo.id === res.data.id) {
+        setGrupoActivo((prev) => ({ ...prev, nombre: res.data.nombre, descripcion: res.data.descripcion }));
+      }
+      setEditandoGrupo(null);
+      setFormEditar({ nombre: '', descripcion: '' });
+      setExito(`Grupo "${res.data.nombre}" actualizado`);
+      setTimeout(() => setExito(''), 4000);
+    } catch (err) {
+      setErrorEditar(err.response?.data?.error || 'Error al editar el grupo');
+    }
+  };
+
   const handleSalir = async (grupoId) => {
     if (!window.confirm('¿Abandonar este grupo?')) return;
     try {
@@ -289,7 +357,17 @@ export default function MisGrupos() {
   if (grupoActivo) {
     return (
       <div className="max-w-6xl mx-auto px-6 py-8">
-        <GrupoDetalle grupo={grupoActivo} onVolver={() => setGrupoActivo(null)} />
+        <GrupoDetalle
+          grupo={grupoActivo}
+          onVolver={() => setGrupoActivo(null)}
+          editandoGrupo={editandoGrupo}
+          setEditandoGrupo={setEditandoGrupo}
+          formEditar={formEditar}
+          setFormEditar={setFormEditar}
+          errorEditar={errorEditar}
+          setErrorEditar={setErrorEditar}
+          handleEditar={handleEditar}
+        />
       </div>
     );
   }
@@ -334,11 +412,11 @@ export default function MisGrupos() {
           {error && <p className="text-red-300 text-sm font-baskerville mb-3">{error}</p>}
           <form onSubmit={handleCrear} className="space-y-3">
             <input
-              className="input-dnd w-full" placeholder="Nombre del grupo *" required
+              className="input-dnd w-full" placeholder="Nombre del grupo *" required maxLength={100}
               value={formCrear.nombre} onChange={(e) => setFormCrear({ ...formCrear, nombre: e.target.value })}
             />
-            <input
-              className="input-dnd w-full" placeholder="Descripción (opcional)"
+            <textarea
+              className="input-dnd w-full" placeholder="Descripción (opcional)" rows={3} maxLength={500}
               value={formCrear.descripcion} onChange={(e) => setFormCrear({ ...formCrear, descripcion: e.target.value })}
             />
             <div className="flex gap-3">
