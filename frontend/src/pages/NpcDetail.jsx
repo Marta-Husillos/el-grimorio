@@ -13,14 +13,14 @@ function NpcDetail() {
   useEffect(() => {
     getNpcById(id)
       .then((res) => setNpc(res.data))
-      .catch(() => navigate('/'))
+      .catch(() => navigate('/fichas'))
       .finally(() => setLoading(false));
   }, [id, navigate]);
 
   const handleDelete = async () => {
     if (!confirm(`¿Eliminar la ficha de "${npc.nombre}"? Esta acción no se puede deshacer.`)) return;
     await deleteNpc(id);
-    navigate('/');
+    navigate('/fichas');
   };
 
   if (loading) {
@@ -37,7 +37,7 @@ function NpcDetail() {
     <div className="max-w-screen-xl mx-auto px-6 py-8">
       {/* Navegación y acciones */}
       <div className="no-print flex items-center justify-between mb-6">
-        <Link to="/" className="font-cinzel text-gold/60 hover:text-gold text-sm transition">
+        <Link to="/fichas" className="font-cinzel text-gold/60 hover:text-gold text-sm transition">
           ← Volver al listado
         </Link>
         <div className="flex gap-3">

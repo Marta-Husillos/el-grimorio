@@ -19,7 +19,7 @@ export default function Login() {
     setCargando(true);
     try {
       await login(form.email, form.password);
-      navigate('/');
+      navigate('/', { replace: true });
     } catch (err) {
       setError(err.response?.data?.error || 'Error al iniciar sesión');
     } finally {
@@ -36,7 +36,7 @@ export default function Login() {
       }}>
         <LoginCreatures activeField={activeField} />
         <h1 className="font-cinzel text-2xl font-bold text-gold text-center mb-1">
-          Fichas de PNJ
+          El Grimorio
         </h1>
         <p className="text-gold/50 text-sm text-center font-baskerville italic mb-8">D&D 5e</p>
 

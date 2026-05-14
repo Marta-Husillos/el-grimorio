@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { getNpcs, deleteNpc, toggleFavorito } from '../services/api';
 import NpcCard from '../components/NpcCard';
-import HeroGrimorio from '../components/HeroGrimorio';
 
 const ALINEAMIENTOS = [
   'Legal bueno', 'Neutral bueno', 'Caótico bueno',
@@ -37,23 +36,13 @@ function DiceD20() {
   );
 }
 
-function Home() {
-  const [mostrarFichas, setMostrarFichas] = useState(false);
+function Fichas() {
   const [npcs, setNpcs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [busqueda, setBusqueda] = useState('');
   const [filtroTipo, setFiltroTipo] = useState('');
   const [filtroAlineamiento, setFiltroAlineamiento] = useState('');
-
-  useEffect(() => {
-    if (!mostrarFichas) {
-      document.body.classList.add('grimorio-active');
-    } else {
-      document.body.classList.remove('grimorio-active');
-    }
-    return () => document.body.classList.remove('grimorio-active');
-  }, [mostrarFichas]);
 
   const cargarNpcs = () => {
     setLoading(true);
@@ -87,19 +76,13 @@ function Home() {
   const hayFiltros = busqueda || filtroTipo || filtroAlineamiento;
 
   return (
-    <>
-      {!mostrarFichas && (
-        <HeroGrimorio onEnter={() => setMostrarFichas(true)} />
-      )}
-
-      {mostrarFichas && (
-      <div style={{ animation: 'fadeIn 0.8s ease-in-out' }}>
-        <style>{`
-          @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to   { opacity: 1; transform: translateY(0); }
-          }
-        `}</style>
+    <div style={{ animation: 'fadeIn 0.8s ease-in-out' }}>
+      <style>{`
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(20px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
       <div className="max-w-screen-xl mx-auto px-6 py-8">
         {/* Cabecera */}
         <div className="text-center mb-12">
@@ -243,10 +226,8 @@ function Home() {
           </>
         )}
       </div>
-      </div>
-      )}
-    </>
+    </div>
   );
 }
 
-export default Home;
+export default Fichas;

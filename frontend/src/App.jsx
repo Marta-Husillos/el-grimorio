@@ -3,7 +3,8 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import Navbar from './components/Navbar';
 import ImportModal from './components/ImportModal';
-import Home from './pages/Home';
+import Portada from './pages/Portada';
+import Fichas from './pages/Fichas';
 import CreateNpc from './pages/CreateNpc';
 import NpcDetail from './pages/NpcDetail';
 import EditNpc from './pages/EditNpc';
@@ -54,7 +55,8 @@ function App() {
               <Navbar />
               <main className="flex-1">
                 <Routes>
-                  <Route path="/"               element={<Home />} />
+                  <Route path="/"               element={<Portada />} />
+                  <Route path="/fichas"         element={<Fichas />} />
                   <Route path="/crear"          element={<CreateNpc />} />
                   <Route path="/npc/:id"        element={<NpcDetail />} />
                   <Route path="/npc/:id/editar" element={<EditNpc />} />

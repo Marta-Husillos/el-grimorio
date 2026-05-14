@@ -107,7 +107,7 @@ function Navbar() {
         <Link to="/" className="flex items-center gap-3 group">
           <DiceIcon />
           <span className="font-cinzel text-lg font-bold text-gold group-hover:text-gold-light transition tracking-wider">
-            Fichas de PNJ
+            El Grimorio
             <span className="text-gold/50 font-normal text-sm ml-2">D&D 5e</span>
           </span>
         </Link>

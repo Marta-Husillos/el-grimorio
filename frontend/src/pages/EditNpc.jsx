@@ -19,7 +19,7 @@ function EditNpc() {
           alert('No tienes permisos para editar esta ficha.');
           navigate(-1);
         } else {
-          navigate('/');
+          navigate('/fichas');
         }
       });
   }, [id, navigate]);

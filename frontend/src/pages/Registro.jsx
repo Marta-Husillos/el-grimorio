@@ -17,7 +17,7 @@ export default function Registro() {
     setCargando(true);
     try {
       await registro(form.nombre, form.email, form.password);
-      navigate('/');
+      navigate('/', { replace: true });
     } catch (err) {
       setError(err.response?.data?.error || 'Error al crear la cuenta');
     } finally {
@@ -33,7 +33,7 @@ export default function Registro() {
         boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
       }}>
         <h1 className="font-cinzel text-2xl font-bold text-gold text-center mb-1">
-          Fichas de PNJ
+          El Grimorio
         </h1>
         <p className="text-gold/50 text-sm text-center font-baskerville italic mb-8">D&D 5e</p>
 
